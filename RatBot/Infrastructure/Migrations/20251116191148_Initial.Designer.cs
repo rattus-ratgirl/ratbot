@@ -8,10 +8,10 @@ using RatBot.Infrastructure.Data;
 
 #nullable disable
 
-namespace RatBot.Migrations
+namespace RatBot.Infrastructure.Migrations
 {
     [DbContext(typeof(BotDbContext))]
-    [Migration("20251116190328_Initial")]
+    [Migration("20251116191148_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -39,7 +39,7 @@ namespace RatBot.Migrations
 
                     b.HasKey("GuildId");
 
-                    b.ToTable("GuildConfigs", "config");
+                    b.ToTable("GuildConfigs");
                 });
 #pragma warning restore 612, 618
         }

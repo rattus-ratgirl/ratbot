@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace RatBot.Migrations
+namespace RatBot.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration
@@ -11,15 +11,11 @@ namespace RatBot.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.EnsureSchema(
-                name: "config");
-
             migrationBuilder.AlterDatabase()
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
                 name: "GuildConfigs",
-                schema: "config",
                 columns: table => new
                 {
                     GuildId = table.Column<ulong>(type: "bigint unsigned", nullable: false)
@@ -38,8 +34,7 @@ namespace RatBot.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "GuildConfigs",
-                schema: "config");
+                name: "GuildConfigs");
         }
     }
 }

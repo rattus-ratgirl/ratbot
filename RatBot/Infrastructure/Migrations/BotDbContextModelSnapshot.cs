@@ -7,7 +7,7 @@ using RatBot.Infrastructure.Data;
 
 #nullable disable
 
-namespace RatBot.Migrations
+namespace RatBot.Infrastructure.Migrations
 {
     [DbContext(typeof(BotDbContext))]
     partial class BotDbContextModelSnapshot : ModelSnapshot
@@ -36,7 +36,7 @@ namespace RatBot.Migrations
 
                     b.HasKey("GuildId");
 
-                    b.ToTable("GuildConfigs", "config");
+                    b.ToTable("GuildConfigs");
                 });
 #pragma warning restore 612, 618
         }

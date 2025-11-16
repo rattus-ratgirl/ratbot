@@ -2,7 +2,7 @@
 
 namespace RatBot.Domain.Entities;
 
-[Table("GuildConfigs", Schema = "config")]
+[Table("GuildConfigs")]
 public sealed class GuildConfig
 {
     public required ulong GuildId { get; set; }
