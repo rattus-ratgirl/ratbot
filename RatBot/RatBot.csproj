@@ -36,7 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Discord\Modules\" />
-    <Folder Include="Infrastructure\Migrations\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RatBot.Commands\RatBot.Commands.csproj" />
