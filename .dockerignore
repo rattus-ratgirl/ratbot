@@ -1,0 +1,38 @@
+﻿# Build outputs
+**/bin/
+**/obj/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+.nuget/
+
+# IDE and editor files
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.DotSettings.user
+
+# Environment and secrets
+.env
+*.env
+
+# Database data
+docker/mysql-data/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker files (if building from repo root)
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# Documentation
+README.md
+LICENSE
+*.md

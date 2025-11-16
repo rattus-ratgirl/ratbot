@@ -1,0 +1,10 @@
+﻿global using Discord;
+global using Discord.Rest;
+global using Discord.WebSocket;
+global using DotNetEnv;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Hosting;
+global using RatBot.Domain.Entities;
+global using Serilog;

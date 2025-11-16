@@ -1,0 +1,7 @@
+﻿mode: ContinuousDelivery
+branches:
+  main:
+    mode: ContinuousDelivery
+    increment: Patch
+    regex: ^(main|master)$
+    is-main-branch: true

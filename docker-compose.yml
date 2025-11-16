@@ -1,0 +1,22 @@
+﻿services:
+  mysql:
+    image: mysql:latest
+    container_name: bot-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB__PASSWORD}
+      MYSQL_DATABASE: ${DB__DATABASE}
+      MYSQL_USER: ${DB__USER}
+      MYSQL_PASSWORD: ${DB__PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/mysql-data:/var/lib/mysql
+
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
