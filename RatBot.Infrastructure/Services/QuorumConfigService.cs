@@ -33,7 +33,7 @@ public sealed class QuorumConfigService
         double proportion)
     {
         QuorumScopeConfig? existing = await GetAsync(guildId, scopeType, scopeId);
-        
+
         if (existing is not null) return;
 
         _dbContext.QuorumScopeConfigs.Add(
@@ -50,7 +50,8 @@ public sealed class QuorumConfigService
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<bool> UpdateAsync(ulong guildId, QuorumScopeType scopeType, ulong scopeId, ulong roleId, double proportion)
+    public async Task<bool> UpdateAsync(ulong guildId, QuorumScopeType scopeType, ulong scopeId, ulong roleId,
+        double proportion)
     {
         QuorumScopeConfig? existing = await GetAsync(guildId, scopeType, scopeId);
         if (existing is null)
