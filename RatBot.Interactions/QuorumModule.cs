@@ -4,11 +4,12 @@ using Discord.WebSocket;
 using RatBot.Domain.Entities;
 using RatBot.Domain.Enums;
 using RatBot.Infrastructure.Services;
+using Serilog;
 
 namespace RatBot.Interactions;
 
 [Group("quorum", "Quorum commands.")]
-public class QuorumModule(QuorumConfigService quorumConfigService) : SlashCommandBase
+public class QuorumModule(QuorumConfigService quorumConfigService, ILogger logger) : SlashCommandBase
 {
     public class Config(QuorumConfigService quorumConfigService) : SlashCommandBase
     {
@@ -94,6 +95,14 @@ public class QuorumModule(QuorumConfigService quorumConfigService) : SlashComman
             ulong roleId = config.RoleId;
             int membersWithRole = Context.Guild.GetRole(roleId)?.Members?.Count() ?? 0;
             int quorumCount = (int)Math.Ceiling(membersWithRole * config.QuorumProportion);
+
+            logger.Debug(
+                "Members with role {RoleId}: {MembersWithRole}, quorum count: {QuorumCount}, proportion: {ConfigQuorumProportion}",
+                roleId,
+                membersWithRole,
+                quorumCount,
+                config.QuorumProportion
+            );
 
             await RespondAsync($"Quorum count for {currentChannel.Mention}: {quorumCount}");
 
