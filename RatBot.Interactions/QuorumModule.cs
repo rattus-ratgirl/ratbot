@@ -47,13 +47,7 @@ public class QuorumModule(QuorumConfigService quorumConfigService) : SlashComman
                     _ => throw new ArgumentOutOfRangeException(),
                 };
 
-                await quorumConfigService.CreateAsync(
-                    Context.Guild.Id,
-                    scopeType,
-                    scope.Id,
-                    parsedRoleId,
-                    proportion
-                );
+                await quorumConfigService.CreateAsync(Context.Guild.Id, scopeType, scope.Id, parsedRoleId, proportion);
 
                 SocketRole? role = Context.Guild.GetRole(parsedRoleId);
                 SocketTextChannel? channel = Context.Guild.GetTextChannel(scope.Id);
