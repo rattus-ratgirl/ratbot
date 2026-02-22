@@ -1,8 +1,8 @@
 ﻿using Discord.Commands;
 using Discord.Interactions;
-using RatBot.Application.Services;
 using RatBot.Discord;
 using RatBot.Infrastructure.Data;
+using RatBot.Infrastructure.Services;
 
 namespace RatBot;
 
@@ -13,21 +13,15 @@ public static class Program
         Env.TraversePath().Load();
 
         using IHost host = Host.CreateDefaultBuilder(args)
-            .ConfigureAppConfiguration(
-                (_, configurationBuilder) =>
-                {
-                    configurationBuilder.AddEnvironmentVariables();
-                }
+            .ConfigureAppConfiguration((_, configurationBuilder) => { configurationBuilder.AddEnvironmentVariables(); }
             )
-            .UseSerilog(
-                (_, _, loggerConfiguration) =>
-                    loggerConfiguration
-                        .Enrich.FromLogContext()
-                        .WriteTo.Console()
-                        .WriteTo.File("logs/ratbot-.log", rollingInterval: RollingInterval.Day)
+            .UseSerilog((_, _, loggerConfiguration) =>
+                loggerConfiguration
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console()
+                    .WriteTo.File("logs/ratbot-.log", rollingInterval: RollingInterval.Day)
             )
-            .ConfigureServices(
-                (ctx, services) =>
+            .ConfigureServices((ctx, services) =>
                 {
                     IConfiguration config = ctx.Configuration;
 
@@ -87,20 +81,6 @@ public static class Program
                 Console.WriteLine($"[DB] Applying {pending.Count} pending migration(s)...");
                 await dbContext.Database.MigrateAsync();
                 Console.WriteLine("[DB] Migrations applied successfully.");
-            }
-            else
-            {
-                IEnumerable<string> all = dbContext.Database.GetMigrations();
-                if (!all.Any())
-                {
-                    Console.WriteLine("[DB] No migrations found. Ensuring database is created...");
-                    await dbContext.Database.EnsureCreatedAsync();
-                    Console.WriteLine("[DB] Database ensured (created if missing).");
-                }
-                else
-                {
-                    Console.WriteLine("[DB] Database already up to date.");
-                }
             }
         }
         catch (Exception ex)

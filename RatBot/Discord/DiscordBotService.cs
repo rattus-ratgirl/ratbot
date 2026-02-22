@@ -2,9 +2,8 @@
 using System.Reflection;
 using Discord.Commands;
 using Discord.Interactions;
-using RatBot.Application.Services;
-using RatBot.Commands;
-using RatBot.Interactions;
+using RatBot.Domain.Entities;
+using RatBot.Infrastructure.Services;
 
 namespace RatBot.Discord;
 
@@ -42,10 +41,12 @@ public sealed class DiscordBotService
 
         Assembly prefixCommandsAssembly = Assembly.Load("RatBot.Commands");
         Assembly slashCommandsAssembly = Assembly.Load("RatBot.Interactions");
+        Assembly mainAssembly = Assembly.GetExecutingAssembly();
 
         await _commandService.AddModulesAsync(prefixCommandsAssembly, _services);
         Console.WriteLine($"[DiscordBot] Registered {_commandService.Modules.Count()} command modules.");
 
+        await _interactionService.AddModulesAsync(mainAssembly, _services);
         await _interactionService.AddModulesAsync(slashCommandsAssembly, _services);
         Console.WriteLine($"[DiscordBot] Registered {_interactionService.Modules.Count} interaction modules.");
 

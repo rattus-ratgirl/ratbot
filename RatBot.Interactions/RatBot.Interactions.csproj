@@ -13,4 +13,8 @@
         <PackageReference Include="Discord.Net.WebSocket" Version="3.18.0"/>
         <PackageReference Include="Serilog" Version="4.3.0"/>
     </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\RatBot.Domain\RatBot.Domain.csproj" />
+        <ProjectReference Include="..\RatBot.Infrastructure\RatBot.Infrastructure.csproj" />
+    </ItemGroup>
 </Project>

@@ -1,4 +1,6 @@
-﻿namespace RatBot.Infrastructure.Data;
+﻿using Microsoft.Extensions.Configuration;
+
+namespace RatBot.Infrastructure.Data;
 
 public static class MySqlConnectionStringBuilder
 {

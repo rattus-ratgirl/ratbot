@@ -1,6 +1,8 @@
-﻿using RatBot.Infrastructure.Data;
+﻿using Microsoft.Extensions.Configuration;
+using RatBot.Domain.Entities;
+using RatBot.Infrastructure.Data;
 
-namespace RatBot.Application.Services;
+namespace RatBot.Infrastructure.Services;
 
 public sealed class GuildConfigService
 {
