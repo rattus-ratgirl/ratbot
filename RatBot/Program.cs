@@ -61,6 +61,7 @@ public static class Program
                     #region Application Services
 
                     services.AddScoped<GuildConfigService>();
+                    services.AddScoped<QuorumConfigService>();
 
                     #endregion
                 }
