@@ -22,18 +22,19 @@ public sealed class QuorumConfigService
 
     public Task<List<QuorumScopeConfig>> ListAsync(ulong guildId)
     {
-        return Queryable
-            .Where<QuorumScopeConfig>(_dbContext.QuorumScopeConfigs, x => x.GuildId == guildId)
+        return _dbContext.QuorumScopeConfigs
+            .Where(x => x.GuildId == guildId)
             .OrderBy(x => x.ScopeType)
             .ThenBy(x => x.ScopeId)
             .ToListAsync();
     }
 
-    public async Task<bool> CreateAsync(ulong guildId, QuorumScopeType scopeType, ulong scopeId, ulong roleId, double proportion)
+    public async Task CreateAsync(ulong guildId, QuorumScopeType scopeType, ulong scopeId, ulong roleId,
+        double proportion)
     {
         QuorumScopeConfig? existing = await GetAsync(guildId, scopeType, scopeId);
-        if (existing is not null)
-            return false;
+        
+        if (existing is not null) return;
 
         _dbContext.QuorumScopeConfigs.Add(
             new QuorumScopeConfig
@@ -47,7 +48,6 @@ public sealed class QuorumConfigService
         );
 
         await _dbContext.SaveChangesAsync();
-        return true;
     }
 
     public async Task<bool> UpdateAsync(ulong guildId, QuorumScopeType scopeType, ulong scopeId, ulong roleId, double proportion)
