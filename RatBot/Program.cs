@@ -46,9 +46,7 @@ public static class Program
 
                     string connectionString = MySqlConnectionStringBuilder.Build(config);
 
-                    services.AddDbContext<BotDbContext>(opt =>
-                        opt.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
-                    );
+                    services.AddDbContext<BotDbContext>(opt => opt.UseMySQL(connectionString));
 
                     #endregion
 

@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Design;
+﻿using DotNetEnv;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace RatBot.Infrastructure.Data;
 
@@ -22,7 +24,7 @@ public sealed class DesignTimeBotDbContextFactory : IDesignTimeDbContextFactory<
             );
 
         DbContextOptions<BotDbContext> options = new DbContextOptionsBuilder<BotDbContext>()
-            .UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+            .UseMySQL(connectionString)
             .Options;
 
         return new BotDbContext(options);
