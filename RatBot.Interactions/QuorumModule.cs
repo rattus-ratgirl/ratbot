@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using RatBot.Domain.Entities;
 using RatBot.Domain.Enums;
 using RatBot.Infrastructure.Services;
@@ -38,9 +39,8 @@ public class QuorumModule(QuorumConfigService quorumConfigService) : SlashComman
 
             try
             {
-                QuorumScopeType scopeType = Context
-                    .Guild.Channels.FirstOrDefault(c => c.Id == parsedScopeId)!
-                    .ChannelType switch
+                SocketGuildChannel scope = Context.Guild.Channels.FirstOrDefault(c => c.Id == parsedScopeId)!;
+                QuorumScopeType scopeType = scope.ChannelType switch
                 {
                     ChannelType.Text => QuorumScopeType.Channel,
                     ChannelType.Category => QuorumScopeType.Category,
@@ -50,15 +50,26 @@ public class QuorumModule(QuorumConfigService quorumConfigService) : SlashComman
                 await quorumConfigService.CreateAsync(
                     Context.Guild.Id,
                     scopeType,
-                    parsedScopeId,
+                    scope.Id,
                     parsedRoleId,
                     proportion
                 );
 
-                await RespondAsync(
-                    $"Quorum config added for scope {parsedScopeId} with role {parsedRoleId} and proportion {proportion}.",
-                    ephemeral: true
-                );
+                SocketRole? role = Context.Guild.GetRole(parsedRoleId);
+                SocketTextChannel? channel = Context.Guild.GetTextChannel(scope.Id);
+
+                if (channel is not null)
+                    await RespondAsync(
+                        $"Quorum config added in channel {channel.Mention} with role {role.Mention} and proportion {proportion}.",
+                        ephemeral: true
+                    );
+
+                SocketCategoryChannel? category = Context.Guild.GetCategoryChannel(scope.Id);
+                if (category is not null)
+                    await RespondAsync(
+                        $"Quorum config added in category \"{category.Name}\" with role {role.Mention} and proportion {proportion}.",
+                        ephemeral: true
+                    );
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -90,7 +101,7 @@ public class QuorumModule(QuorumConfigService quorumConfigService) : SlashComman
             int membersWithRole = Context.Guild.GetRole(roleId)?.Members?.Count() ?? 0;
             int quorumCount = (int)Math.Ceiling(membersWithRole * config.QuorumProportion);
 
-            await RespondAsync($"Quorum count for {currentChannel.Mention}: {quorumCount}", ephemeral: true);
+            await RespondAsync($"Quorum count for {currentChannel.Mention}: {quorumCount}");
 
             return;
         }
