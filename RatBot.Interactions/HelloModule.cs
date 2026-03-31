@@ -7,12 +7,12 @@ namespace RatBot.Interactions;
 public sealed class HelloModule : SlashCommandBase
 {
     private readonly ILogger _logger;
-    
+
     public HelloModule(ILogger logger)
     {
         _logger = logger.ForContext<HelloModule>();
     }
-    
+
     [SlashCommand("hello", "Says hello!")]
     [RequireUserPermission(GuildPermission.SendMessages)]
     public async Task HelloAsync()

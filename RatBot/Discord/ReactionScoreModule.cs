@@ -121,7 +121,8 @@ public sealed class ReactionScoreModule
             string emojiId = ResolveEmojiId(reaction.Emote);
 
             await using AsyncServiceScope scope = _services.CreateAsyncScope();
-            ReactionEmojiScoreService emojiScoreService = scope.ServiceProvider.GetRequiredService<ReactionEmojiScoreService>();
+            ReactionEmojiScoreService emojiScoreService =
+                scope.ServiceProvider.GetRequiredService<ReactionEmojiScoreService>();
             int? delta = await emojiScoreService.GetScoreAsync(emojiId);
             if (delta is null)
                 return;
@@ -152,7 +153,9 @@ public sealed class ReactionScoreModule
         if (baselineRole is null)
             return;
 
-        ScoreRoleTier? matchedTier = _roleTiers.FirstOrDefault(x => x.Contains(score) && user.Guild.GetRole(x.RoleId) is not null);
+        ScoreRoleTier? matchedTier = _roleTiers.FirstOrDefault(x =>
+            x.Contains(score) && user.Guild.GetRole(x.RoleId) is not null
+        );
         ulong targetRoleId = matchedTier?.RoleId ?? _baselineRoleId;
 
         List<SocketRole> trackedRoles = _roleTiers
@@ -195,7 +198,9 @@ public sealed class ReactionScoreModule
             if (roleId == 0)
                 continue;
 
-            if (!int.TryParse(child["MinScore"], out int minScore) || !int.TryParse(child["MaxScore"], out int maxScore))
+            if (
+                !int.TryParse(child["MinScore"], out int minScore) || !int.TryParse(child["MaxScore"], out int maxScore)
+            )
                 continue;
 
             tiers.Add(new ScoreRoleTier(roleId, minScore, maxScore));

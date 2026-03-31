@@ -3,6 +3,8 @@ using Discord;
 using Discord.Interactions;
 using RatBot.Infrastructure.Services;
 
+// ReSharper disable UnusedType.Global
+
 namespace RatBot.Interactions;
 
 [Group("reaction-score", "Manage reaction score emoji mappings.")]
@@ -19,6 +21,7 @@ public sealed partial class ReactionScoreModule(ReactionEmojiScoreService reacti
         }
 
         string emojiId = ResolveEmojiId(emoji);
+
         if (string.IsNullOrWhiteSpace(emojiId))
         {
             await RespondAsync(
@@ -30,6 +33,7 @@ public sealed partial class ReactionScoreModule(ReactionEmojiScoreService reacti
         }
 
         await reactionEmojiScoreService.UpsertAsync(emojiId, score);
+
         await RespondAsync($"Saved mapping: `{emojiId}` => `{score}`.", ephemeral: true);
     }
 

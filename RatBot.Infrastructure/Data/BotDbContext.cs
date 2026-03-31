@@ -22,7 +22,12 @@ public sealed class BotDbContext : DbContext
 
         modelBuilder.Entity<QuorumScopeConfig>(b =>
         {
-            b.HasKey(x => new { x.GuildId, x.ScopeType, x.ScopeId });
+            b.HasKey(x => new
+            {
+                x.GuildId,
+                x.ScopeType,
+                x.ScopeId,
+            });
 
             b.Property(x => x.GuildId).HasColumnType("bigint unsigned");
             b.Property(x => x.ScopeId).HasColumnType("bigint unsigned");

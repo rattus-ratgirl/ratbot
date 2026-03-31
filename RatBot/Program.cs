@@ -14,21 +14,47 @@ public static class Program
         Env.TraversePath().Load();
 
         using IHost host = Host.CreateDefaultBuilder(args)
-            .ConfigureAppConfiguration((_, configurationBuilder) => { configurationBuilder.AddEnvironmentVariables(); }
+            .ConfigureAppConfiguration(
+                (_, configurationBuilder) =>
+                {
+                    configurationBuilder.AddEnvironmentVariables();
+                }
             )
-            .UseSerilog((_, _, loggerConfiguration) =>
-                loggerConfiguration
-                    .MinimumLevel.Verbose()
-                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Debug)
-                    .Enrich.FromLogContext()
-                    .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
-                    .WriteTo.File("logs/verbose-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Verbose)
-                    .WriteTo.File("logs/debug-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Debug)
-                    .WriteTo.File("logs/info-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Information)
-                    .WriteTo.File("logs/warning-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Warning)
-                    .WriteTo.File("logs/error-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Error)
+            .UseSerilog(
+                (_, _, loggerConfiguration) =>
+                    loggerConfiguration
+                        .MinimumLevel.Verbose()
+                        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Debug)
+                        .Enrich.FromLogContext()
+                        .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
+                        .WriteTo.File(
+                            "logs/verbose-.log",
+                            rollingInterval: RollingInterval.Day,
+                            restrictedToMinimumLevel: LogEventLevel.Verbose
+                        )
+                        .WriteTo.File(
+                            "logs/debug-.log",
+                            rollingInterval: RollingInterval.Day,
+                            restrictedToMinimumLevel: LogEventLevel.Debug
+                        )
+                        .WriteTo.File(
+                            "logs/info-.log",
+                            rollingInterval: RollingInterval.Day,
+                            restrictedToMinimumLevel: LogEventLevel.Information
+                        )
+                        .WriteTo.File(
+                            "logs/warning-.log",
+                            rollingInterval: RollingInterval.Day,
+                            restrictedToMinimumLevel: LogEventLevel.Warning
+                        )
+                        .WriteTo.File(
+                            "logs/error-.log",
+                            rollingInterval: RollingInterval.Day,
+                            restrictedToMinimumLevel: LogEventLevel.Error
+                        )
             )
-            .ConfigureServices((ctx, services) =>
+            .ConfigureServices(
+                (ctx, services) =>
                 {
                     IConfiguration config = ctx.Configuration;
 

@@ -42,8 +42,8 @@ public sealed class UserScoreService
         if (ids.Count == 0)
             return new Dictionary<ulong, int>();
 
-        return await _dbContext.UserScores
-            .Where(x => ids.Contains(x.UserId))
+        return await _dbContext
+            .UserScores.Where(x => ids.Contains(x.UserId))
             .ToDictionaryAsync(x => x.UserId, x => x.Score);
     }
 }

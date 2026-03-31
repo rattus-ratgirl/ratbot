@@ -9,9 +9,9 @@
         <Version>0.0.1-1</Version>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Discord.Net.Interactions" Version="3.18.0"/>
-        <PackageReference Include="Discord.Net.WebSocket" Version="3.18.0"/>
-        <PackageReference Include="Serilog" Version="4.3.0"/>
+        <PackageReference Include="Discord.Net.Interactions" Version="3.18.0" />
+        <PackageReference Include="Discord.Net.WebSocket" Version="3.18.0" />
+        <PackageReference Include="Serilog" Version="4.3.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\RatBot.Domain\RatBot.Domain.csproj" />
