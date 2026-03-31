@@ -1,3 +1,4 @@
+using RatBot.Domain.Entities;
 using RatBot.Infrastructure.Services;
 
 namespace RatBot.Discord;
@@ -7,8 +8,8 @@ public sealed class VirtueModule
     private readonly DiscordSocketClient _discordClient;
     private readonly IServiceProvider _services;
     private readonly ILogger _logger;
-    private readonly IReadOnlyList<VirtueRoleTier> _roleTiers;
-    private readonly ulong _baselineRoleId;
+    private readonly IReadOnlyList<VirtueRoleTier> _fallbackRoleTiers;
+    private readonly ulong _fallbackBaselineRoleId;
 
     private bool _isRegistered;
 
@@ -23,13 +24,13 @@ public sealed class VirtueModule
         _services = services;
         _logger = logger.ForContext<VirtueModule>();
 
-        _roleTiers = LoadRoleTiers(config).OrderBy(x => x.MinVirtue).Take(6).ToList();
-        _baselineRoleId = ParseUlong(config["Virtue:BaselineRoleId"]);
+        _fallbackRoleTiers = LoadRoleTiers(config).OrderBy(x => x.MinVirtue).Take(6).ToList();
+        _fallbackBaselineRoleId = ParseUlong(config["Virtue:BaselineRoleId"]);
 
-        if (_roleTiers.Count != 6)
+        if (_fallbackRoleTiers.Count != 6)
             _logger.Warning(
-                "Expected 6 configured virtue role tiers, but loaded {TierCount}.",
-                _roleTiers.Count
+                "Expected 6 fallback configured virtue role tiers, but loaded {TierCount}.",
+                _fallbackRoleTiers.Count
             );
     }
 
@@ -47,12 +48,6 @@ public sealed class VirtueModule
 
     private async Task OnReadyAsync()
     {
-        if (_baselineRoleId == 0)
-        {
-            _logger.Warning("Virtue baseline role is not configured. Set Virtue:BaselineRoleId.");
-            return;
-        }
-
         foreach (SocketGuild guild in _discordClient.Guilds)
         {
             try
@@ -66,15 +61,27 @@ public sealed class VirtueModule
 
             List<SocketGuildUser> users = guild.Users.Where(x => !x.IsBot).ToList();
             await using AsyncServiceScope scope = _services.CreateAsyncScope();
+            VirtueRoleTierConfigService configService = scope.ServiceProvider.GetRequiredService<VirtueRoleTierConfigService>();
             UserVirtueService userVirtueService = scope.ServiceProvider.GetRequiredService<UserVirtueService>();
             Dictionary<ulong, int> virtues = await userVirtueService.GetVirtuesAsync(users.Select(x => x.Id));
+            GuildRoleAssignmentConfig assignmentConfig = await ResolveRoleAssignmentConfigAsync(guild.Id, configService);
+
+            if (assignmentConfig.RoleTiers.Count == 0 && assignmentConfig.FallbackBaselineRoleId == 0)
+            {
+                _logger.Warning(
+                    "Virtue role configuration is missing for guild {GuildId}. Configure 7 tiers via /virtue configure-role.",
+                    guild.Id
+                );
+
+                continue;
+            }
 
             foreach (SocketGuildUser user in users)
             {
                 try
                 {
                     int virtue = virtues.GetValueOrDefault(user.Id);
-                    await ApplyRoleAssignmentAsync(user, virtue);
+                    await ApplyRoleAssignmentAsync(user, virtue, assignmentConfig);
                 }
                 catch (Exception ex)
                 {
@@ -92,9 +99,11 @@ public sealed class VirtueModule
         try
         {
             await using AsyncServiceScope scope = _services.CreateAsyncScope();
+            VirtueRoleTierConfigService configService = scope.ServiceProvider.GetRequiredService<VirtueRoleTierConfigService>();
             UserVirtueService userVirtueService = scope.ServiceProvider.GetRequiredService<UserVirtueService>();
             int virtue = await userVirtueService.GetVirtueAsync(user.Id);
-            await ApplyRoleAssignmentAsync(user, virtue);
+            GuildRoleAssignmentConfig assignmentConfig = await ResolveRoleAssignmentConfigAsync(user.Guild.Id, configService);
+            await ApplyRoleAssignmentAsync(user, virtue, assignmentConfig);
         }
         catch (Exception ex)
         {
@@ -132,6 +141,7 @@ public sealed class VirtueModule
             if (virtueDelta is null)
                 return;
 
+            VirtueRoleTierConfigService configService = scope.ServiceProvider.GetRequiredService<VirtueRoleTierConfigService>();
             UserVirtueService userVirtueService = scope.ServiceProvider.GetRequiredService<UserVirtueService>();
             int updatedVirtue = await userVirtueService.AddVirtueDeltaAsync(message.Author.Id, virtueDelta.Value);
             int previousVirtue = updatedVirtue - virtueDelta.Value;
@@ -154,7 +164,8 @@ public sealed class VirtueModule
             if (author is null || author.IsBot)
                 return;
 
-            await ApplyRoleAssignmentAsync(author, updatedVirtue);
+            GuildRoleAssignmentConfig assignmentConfig = await ResolveRoleAssignmentConfigAsync(guild.Id, configService);
+            await ApplyRoleAssignmentAsync(author, updatedVirtue, assignmentConfig);
         }
         catch (Exception ex)
         {
@@ -162,27 +173,24 @@ public sealed class VirtueModule
         }
     }
 
-    private async Task ApplyRoleAssignmentAsync(SocketGuildUser user, int virtue)
+    private async Task ApplyRoleAssignmentAsync(SocketGuildUser user, int virtue, GuildRoleAssignmentConfig config)
     {
-        if (_baselineRoleId == 0)
-            return;
-
-        SocketRole? baselineRole = user.Guild.GetRole(_baselineRoleId);
-        if (baselineRole is null)
-            return;
-
-        VirtueRoleTier? matchedTier = _roleTiers.FirstOrDefault(x =>
+        VirtueRoleTier? matchedTier = config.RoleTiers.FirstOrDefault(x =>
             x.Contains(virtue) && user.Guild.GetRole(x.RoleId) is not null
         );
-        ulong targetRoleId = matchedTier?.RoleId ?? _baselineRoleId;
+        ulong targetRoleId = matchedTier?.RoleId ?? config.FallbackBaselineRoleId;
 
-        List<SocketRole> trackedRoles = _roleTiers
+        if (targetRoleId == 0)
+            return;
+
+        List<SocketRole> trackedRoles = config.RoleTiers
             .Select(x => user.Guild.GetRole(x.RoleId))
             .Where(x => x is not null)
             .Cast<SocketRole>()
             .ToList();
 
-        if (trackedRoles.All(x => x.Id != baselineRole.Id))
+        SocketRole? baselineRole = user.Guild.GetRole(config.FallbackBaselineRoleId);
+        if (baselineRole is not null && trackedRoles.All(x => x.Id != baselineRole.Id))
             trackedRoles.Add(baselineRole);
 
         List<IRole> toAdd = new List<IRole>();
@@ -228,6 +236,26 @@ public sealed class VirtueModule
         return tiers;
     }
 
+    private async Task<GuildRoleAssignmentConfig> ResolveRoleAssignmentConfigAsync(
+        ulong guildId,
+        VirtueRoleTierConfigService configService
+    )
+    {
+        List<VirtueRoleTierConfig> persisted = await configService.ListAsync(guildId);
+
+        if (persisted.Count == 7)
+        {
+            IReadOnlyList<VirtueRoleTier> tiers = persisted
+                .OrderBy(x => x.TierIndex)
+                .Select(x => new VirtueRoleTier(x.RoleId, x.MinVirtue, x.MaxVirtue))
+                .ToList();
+
+            return new GuildRoleAssignmentConfig(tiers, 0);
+        }
+
+        return new GuildRoleAssignmentConfig(_fallbackRoleTiers, _fallbackBaselineRoleId);
+    }
+
     private static ulong ParseUlong(string? value)
     {
         return ulong.TryParse(value, out ulong parsed) ? parsed : 0;
@@ -247,4 +275,6 @@ public sealed class VirtueModule
     {
         public bool Contains(int value) => value >= MinVirtue && value <= MaxVirtue;
     }
+
+    private sealed record GuildRoleAssignmentConfig(IReadOnlyList<VirtueRoleTier> RoleTiers, ulong FallbackBaselineRoleId);
 }

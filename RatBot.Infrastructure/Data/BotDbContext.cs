@@ -9,6 +9,7 @@ public sealed class BotDbContext : DbContext
     public DbSet<UserVirtue> UserVirtues => Set<UserVirtue>();
     public DbSet<EmojiVirtue> EmojiVirtues => Set<EmojiVirtue>();
     public DbSet<EmojiUsageCount> EmojiUsageCounts => Set<EmojiUsageCount>();
+    public DbSet<VirtueRoleTierConfig> VirtueRoleTierConfigs => Set<VirtueRoleTierConfig>();
 
     public BotDbContext(DbContextOptions<BotDbContext> options)
         : base(options) { }
@@ -62,6 +63,18 @@ public sealed class BotDbContext : DbContext
 
             b.Property(x => x.EmojiId).HasMaxLength(128);
             b.Property(x => x.UsageCount).HasColumnType("int");
+        });
+
+        modelBuilder.Entity<VirtueRoleTierConfig>(b =>
+        {
+            b.HasKey(x => new { x.GuildId, x.TierIndex });
+
+            b.Property(x => x.GuildId).HasColumnType("bigint unsigned");
+            b.Property(x => x.RoleId).HasColumnType("bigint unsigned");
+            b.Property(x => x.MinVirtue).HasColumnType("int");
+            b.Property(x => x.MaxVirtue).HasColumnType("int");
+
+            b.HasIndex(x => x.GuildId);
         });
     }
 }
