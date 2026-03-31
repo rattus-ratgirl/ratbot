@@ -57,6 +57,7 @@ public sealed partial class VirtueModule(
     }
 
     [SlashCommand("show", "Show your current virtue.")]
+    [RequireUserPermission(GuildPermission.Administrator)]
     public async Task ShowAsync()
     {
         int? virtue = await userVirtueService.TryGetVirtueAsync(Context.User.Id);
