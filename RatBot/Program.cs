@@ -24,7 +24,7 @@ public static class Program
                 (_, _, loggerConfiguration) =>
                     loggerConfiguration
                         .MinimumLevel.Verbose()
-                        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Debug)
+                        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                         .Enrich.FromLogContext()
                         .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
                         .WriteTo.File(

@@ -54,6 +54,19 @@ public sealed partial class VirtueModule(
         await RespondAsync($"{user.Mention} has a virtue of `{virtue.Value}`.", ephemeral: true);
     }
 
+    [SlashCommand("show", "Show your current virtue.")]
+    public async Task ShowAsync()
+    {
+        int? virtue = await userVirtueService.TryGetVirtueAsync(Context.User.Id);
+        if (virtue is null)
+        {
+            await RespondAsync("You do not have a recorded virtue yet.", ephemeral: true);
+            return;
+        }
+
+        await RespondAsync($"Your virtue is `{virtue.Value}`.", ephemeral: true);
+    }
+
     private static string ResolveEmojiId(string input)
     {
         string trimmed = input.Trim();

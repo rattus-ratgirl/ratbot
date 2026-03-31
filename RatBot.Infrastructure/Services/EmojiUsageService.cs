@@ -26,4 +26,16 @@ public sealed class EmojiUsageService
 
         await _dbContext.SaveChangesAsync();
     }
+
+    public Task<List<EmojiUsageCount>> GetTopUsageAsync(int limit = 25)
+    {
+        int clampedLimit = Math.Clamp(limit, 1, 100);
+
+        return _dbContext
+            .EmojiUsageCounts.AsNoTracking()
+            .OrderByDescending(x => x.UsageCount)
+            .ThenBy(x => x.EmojiId)
+            .Take(clampedLimit)
+            .ToListAsync();
+    }
 }
