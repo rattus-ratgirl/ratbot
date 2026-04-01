@@ -8,6 +8,7 @@ using RatBot.Infrastructure.Services;
 namespace RatBot.Interactions;
 
 [Group("emoji", "Emoji analytics commands.")]
+[DefaultMemberPermissions(GuildPermission.Administrator)]
 public sealed class EmojiModule(EmojiUsageService emojiUsageService, DiscordSocketClient discordClient) : SlashCommandBase
 {
     [SlashCommand("usage", "Show top emoji usage counts.")]
