@@ -144,11 +144,10 @@ public sealed class DiscordBotService
 
         try
         {
-            await using AsyncServiceScope scope = _services.CreateAsyncScope();
             IInteractionContext context = new SocketInteractionContext(_discordClient, interaction);
             global::Discord.Interactions.IResult result = await _interactionService.ExecuteCommandAsync(
                 context,
-                scope.ServiceProvider
+                _services
             );
 
             if (result.IsSuccess)
