@@ -42,6 +42,19 @@ public sealed class DiscordBotService
             return Task.CompletedTask;
         };
 
+        _discordClient.Connected += () =>
+        {
+            Console.WriteLine("[Gateway] Connected.");
+            return Task.CompletedTask;
+        };
+
+        _discordClient.Disconnected += ex =>
+        {
+            Console.WriteLine(ex is null ? "[Gateway] Disconnected." : $"[Gateway] Disconnected with error: {ex}");
+
+            return Task.CompletedTask;
+        };
+
         Assembly prefixCommandsAssembly = Assembly.Load("RatBot.Commands");
         Assembly slashCommandsAssembly = Assembly.Load("RatBot.Interactions");
         Assembly mainAssembly = Assembly.GetExecutingAssembly();
@@ -131,8 +144,28 @@ public sealed class DiscordBotService
 
         try
         {
+            await using AsyncServiceScope scope = _services.CreateAsyncScope();
             IInteractionContext context = new SocketInteractionContext(_discordClient, interaction);
-            await _interactionService.ExecuteCommandAsync(context, _services);
+            global::Discord.Interactions.IResult result = await _interactionService.ExecuteCommandAsync(
+                context,
+                scope.ServiceProvider
+            );
+
+            if (result.IsSuccess)
+                return;
+
+            Console.WriteLine(
+                $"[DiscordBot] Interaction command failed. Error={result.Error}, Reason={result.ErrorReason}"
+            );
+
+            string reason = string.IsNullOrWhiteSpace(result.ErrorReason)
+                ? "Command execution failed."
+                : result.ErrorReason;
+
+            if (!interaction.HasResponded)
+                await interaction.RespondAsync($"Command failed: {reason}", ephemeral: true);
+            else
+                await interaction.FollowupAsync($"Command failed: {reason}", ephemeral: true);
         }
         catch (Exception ex)
         {
@@ -141,9 +174,9 @@ public sealed class DiscordBotService
             try
             {
                 if (!interaction.HasResponded)
-                    await interaction.RespondAsync("An error occurred executing that command.");
+                    await interaction.RespondAsync("An error occurred executing that command.", ephemeral: true);
                 else
-                    await interaction.FollowupAsync("An error occurred executing that command.");
+                    await interaction.FollowupAsync("An error occurred executing that command.", ephemeral: true);
             }
             catch (Exception followupEx)
             {
