@@ -80,7 +80,8 @@ public sealed class VirtueModule
         if (message.Channel is not SocketGuildChannel guildChannel)
             return;
 
-        if (message.Author is not SocketGuildUser author)
+        SocketGuildUser? author = message.Author as SocketGuildUser ?? guildChannel.Guild.GetUser(message.Author.Id);
+        if (author is null)
             return;
 
         try

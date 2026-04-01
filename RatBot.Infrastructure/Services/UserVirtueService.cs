@@ -14,20 +14,44 @@ public sealed class UserVirtueService
 
     public async Task<int> AddVirtueDeltaAsync(ulong userId, int delta)
     {
-        UserVirtue? userVirtue = await _dbContext.UserVirtues.FindAsync(userId);
+        if (delta == 0)
+            return await GetVirtueAsync(userId);
 
-        if (userVirtue is null)
+        int updatedRowCount = await _dbContext
+            .UserVirtues.Where(x => x.UserId == userId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Virtue, x => x.Virtue + delta));
+
+        if (updatedRowCount == 0)
         {
-            userVirtue = new UserVirtue { UserId = userId, Virtue = delta };
-            _dbContext.UserVirtues.Add(userVirtue);
-        }
-        else
-        {
-            userVirtue.Virtue += delta;
+            _dbContext.UserVirtues.Add(new UserVirtue { UserId = userId, Virtue = delta });
+
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (IsDuplicateKey(ex))
+            {
+                // A concurrent writer inserted first; apply this delta via update instead.
+                _dbContext.ChangeTracker.Clear();
+                await _dbContext
+                    .UserVirtues.Where(x => x.UserId == userId)
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Virtue, x => x.Virtue + delta));
+            }
         }
 
-        await _dbContext.SaveChangesAsync();
-        return userVirtue.Virtue;
+        int updatedVirtue = await _dbContext
+            .UserVirtues.AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .Select(x => x.Virtue)
+            .SingleAsync();
+
+        return updatedVirtue;
+    }
+
+    private static bool IsDuplicateKey(DbUpdateException ex)
+    {
+        string message = ex.InnerException?.Message ?? ex.Message;
+        return message.Contains("Duplicate entry", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<int> GetVirtueAsync(ulong userId)
