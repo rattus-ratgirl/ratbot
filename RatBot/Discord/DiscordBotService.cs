@@ -4,6 +4,7 @@ using Discord.Commands;
 using Discord.Interactions;
 using RatBot.Domain.Entities;
 using RatBot.Infrastructure.Services;
+using IResult = Discord.Interactions.IResult;
 
 namespace RatBot.Discord;
 
@@ -139,13 +140,13 @@ public sealed class DiscordBotService
 
     private async Task HandleInteractionAsync(SocketInteraction interaction)
     {
-        if (interaction.Type != InteractionType.ApplicationCommand)
+        if (interaction.Type is not (InteractionType.ApplicationCommand or InteractionType.ModalSubmit))
             return;
 
         try
         {
             IInteractionContext context = new SocketInteractionContext(_discordClient, interaction);
-            global::Discord.Interactions.IResult result = await _interactionService.ExecuteCommandAsync(
+            IResult result = await _interactionService.ExecuteCommandAsync(
                 context,
                 _services
             );
