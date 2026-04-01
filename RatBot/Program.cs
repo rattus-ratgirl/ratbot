@@ -63,6 +63,7 @@ public static class Program
                     services.AddSingleton(_ => new DiscordSocketClient(
                         new DiscordSocketConfig
                         {
+                            MessageCacheSize = 1000,
                             GatewayIntents =
                                 GatewayIntents.Guilds
                                 | GatewayIntents.GuildMembers
@@ -94,7 +95,6 @@ public static class Program
                     services.AddScoped<QuorumConfigService>();
                     services.AddScoped<UserVirtueService>();
                     services.AddScoped<EmojiUsageService>();
-                    services.AddScoped<VirtueReactionLockService>();
                     services.AddScoped<VirtueRoleTierConfigService>();
 
                     #endregion

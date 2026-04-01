@@ -128,10 +128,10 @@ public sealed class VirtueModule
             if (channel is not SocketGuildChannel guildChannel)
                 return;
 
-            IUserMessage? message = await cachedMessage.GetOrDownloadAsync();
-            if (message is null)
+            if (!cachedMessage.HasValue)
                 return;
 
+            IUserMessage message = cachedMessage.Value;
             string emojiId = ResolveEmojiId(reaction.Emote);
 
             await using AsyncServiceScope scope = _services.CreateAsyncScope();
@@ -139,18 +139,6 @@ public sealed class VirtueModule
             await emojiUsageService.IncrementUsageAsync(emojiId);
 
             if (message.Author.IsBot)
-                return;
-
-            VirtueReactionLockService virtueReactionLockService =
-                scope.ServiceProvider.GetRequiredService<VirtueReactionLockService>();
-            bool isFirstReactionFromUserForMessage = await virtueReactionLockService.TryLockAsync(
-                message.Id,
-                reaction.UserId,
-                message.Author.Id,
-                emojiId
-            );
-
-            if (!isFirstReactionFromUserForMessage)
                 return;
 
             VirtueRoleTierConfigService configService =
