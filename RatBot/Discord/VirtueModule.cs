@@ -40,74 +40,41 @@ public sealed class VirtueModule
             return;
 
         _discordClient.ReactionAdded += OnReactionAddedAsync;
-        _discordClient.Ready += OnReadyAsync;
-        _discordClient.UserJoined += OnUserJoinedAsync;
+        _discordClient.MessageReceived += OnMessageReceivedAsync;
 
         _isRegistered = true;
     }
 
-    private async Task OnReadyAsync()
+    private async Task OnMessageReceivedAsync(SocketMessage rawMessage)
     {
-        foreach (SocketGuild guild in _discordClient.Guilds)
-        {
-            try
-            {
-                await guild.DownloadUsersAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.Warning(ex, "Failed to download users for guild {GuildId}.", guild.Id);
-            }
+        if (rawMessage is not SocketUserMessage message)
+            return;
 
-            List<SocketGuildUser> users = guild.Users.Where(x => !x.IsBot).ToList();
-            await using AsyncServiceScope scope = _services.CreateAsyncScope();
-            VirtueRoleTierConfigService configService = scope.ServiceProvider.GetRequiredService<VirtueRoleTierConfigService>();
-            UserVirtueService userVirtueService = scope.ServiceProvider.GetRequiredService<UserVirtueService>();
-            Dictionary<ulong, int> virtues = await userVirtueService.GetVirtuesAsync(users.Select(x => x.Id));
-            GuildRoleAssignmentConfig assignmentConfig = await ResolveRoleAssignmentConfigAsync(guild.Id, configService);
+        if (message.Author.IsBot)
+            return;
 
-            if (assignmentConfig.RoleTiers.Count == 0 && assignmentConfig.FallbackBaselineRoleId == 0)
-            {
-                _logger.Warning(
-                    "Virtue role configuration is missing for guild {GuildId}. Configure 7 tiers via /virtue configure-role.",
-                    guild.Id
-                );
+        if (message.Channel is not SocketGuildChannel guildChannel)
+            return;
 
-                continue;
-            }
-
-            foreach (SocketGuildUser user in users)
-            {
-                try
-                {
-                    int virtue = virtues.GetValueOrDefault(user.Id);
-                    await ApplyRoleAssignmentAsync(user, virtue, assignmentConfig);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Warning(ex, "Failed to assign virtue role for user {UserId}.", user.Id);
-                }
-            }
-        }
-    }
-
-    private async Task OnUserJoinedAsync(SocketGuildUser user)
-    {
-        if (user.IsBot)
+        if (message.Author is not SocketGuildUser author)
             return;
 
         try
         {
             await using AsyncServiceScope scope = _services.CreateAsyncScope();
-            VirtueRoleTierConfigService configService = scope.ServiceProvider.GetRequiredService<VirtueRoleTierConfigService>();
+            VirtueRoleTierConfigService configService =
+                scope.ServiceProvider.GetRequiredService<VirtueRoleTierConfigService>();
             UserVirtueService userVirtueService = scope.ServiceProvider.GetRequiredService<UserVirtueService>();
-            int virtue = await userVirtueService.GetVirtueAsync(user.Id);
-            GuildRoleAssignmentConfig assignmentConfig = await ResolveRoleAssignmentConfigAsync(user.Guild.Id, configService);
-            await ApplyRoleAssignmentAsync(user, virtue, assignmentConfig);
+            int virtue = await userVirtueService.GetVirtueAsync(author.Id);
+            GuildRoleAssignmentConfig assignmentConfig = await ResolveRoleAssignmentConfigAsync(
+                guildChannel.Guild.Id,
+                configService
+            );
+            await ApplyRoleAssignmentAsync(author, virtue, assignmentConfig);
         }
         catch (Exception ex)
         {
-            _logger.Warning(ex, "Failed to assign baseline/virtue role for new user {UserId}.", user.Id);
+            _logger.Warning(ex, "Failed to assign virtue role on message for user {UserId}.", author.Id);
         }
     }
 
@@ -186,25 +153,29 @@ public sealed class VirtueModule
         List<SocketRole> trackedRoles = config.RoleTiers
             .Select(x => user.Guild.GetRole(x.RoleId))
             .Where(x => x is not null)
-            .Cast<SocketRole>()
             .ToList();
 
         SocketRole? baselineRole = user.Guild.GetRole(config.FallbackBaselineRoleId);
         if (baselineRole is not null && trackedRoles.All(x => x.Id != baselineRole.Id))
             trackedRoles.Add(baselineRole);
 
-        List<IRole> toAdd = new List<IRole>();
-        List<IRole> toRemove = new List<IRole>();
+        List<IRole> toAdd = [];
+        List<IRole> toRemove = [];
 
         foreach (SocketRole role in trackedRoles)
         {
             bool userHasRole = user.Roles.Any(r => r.Id == role.Id);
             bool shouldHaveRole = role.Id == targetRoleId;
 
-            if (shouldHaveRole && !userHasRole)
-                toAdd.Add(role);
-            else if (!shouldHaveRole && userHasRole)
-                toRemove.Add(role);
+            switch (shouldHaveRole)
+            {
+                case true when !userHasRole:
+                    toAdd.Add(role);
+                    break;
+                case false when userHasRole:
+                    toRemove.Add(role);
+                    break;
+            }
         }
 
         if (toRemove.Count > 0)
@@ -215,7 +186,6 @@ public sealed class VirtueModule
             await user.AddRolesAsync(toAdd);
 
             foreach (IRole role in toAdd)
-            {
                 _logger.Information(
                     "Granted virtue role {RoleId} ({RoleName}) to user {UserId} in guild {GuildId} at virtue {Virtue}",
                     role.Id,
@@ -224,13 +194,12 @@ public sealed class VirtueModule
                     user.Guild.Id,
                     virtue
                 );
-            }
         }
     }
 
     private static List<VirtueRoleTier> LoadRoleTiers(IConfiguration config)
     {
-        List<VirtueRoleTier> tiers = new List<VirtueRoleTier>();
+        List<VirtueRoleTier> tiers = [];
 
         foreach (IConfigurationSection child in config.GetSection("Virtue:RoleTiers").GetChildren())
         {
