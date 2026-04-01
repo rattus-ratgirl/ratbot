@@ -52,4 +52,16 @@ public sealed class UserVirtueService
             .UserVirtues.Where(x => ids.Contains(x.UserId))
             .ToDictionaryAsync(x => x.UserId, x => x.Virtue);
     }
+
+    public Task<List<UserVirtue>> GetTopVirtuesAsync(int limit = 20)
+    {
+        int clampedLimit = Math.Clamp(limit, 1, 100);
+
+        return _dbContext
+            .UserVirtues.AsNoTracking()
+            .OrderByDescending(x => x.Virtue)
+            .ThenBy(x => x.UserId)
+            .Take(clampedLimit)
+            .ToListAsync();
+    }
 }

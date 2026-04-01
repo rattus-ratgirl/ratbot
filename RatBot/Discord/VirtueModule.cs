@@ -211,7 +211,21 @@ public sealed class VirtueModule
             await user.RemoveRolesAsync(toRemove);
 
         if (toAdd.Count > 0)
+        {
             await user.AddRolesAsync(toAdd);
+
+            foreach (IRole role in toAdd)
+            {
+                _logger.Information(
+                    "Granted virtue role {RoleId} ({RoleName}) to user {UserId} in guild {GuildId} at virtue {Virtue}",
+                    role.Id,
+                    role.Name,
+                    user.Id,
+                    user.Guild.Id,
+                    virtue
+                );
+            }
+        }
     }
 
     private static List<VirtueRoleTier> LoadRoleTiers(IConfiguration config)
