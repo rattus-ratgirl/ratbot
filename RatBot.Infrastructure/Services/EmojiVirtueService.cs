@@ -18,6 +18,31 @@ public sealed class EmojiVirtueService
         return record?.Virtue;
     }
 
+    public async Task<List<EmojiVirtue>> ListVirtuesAsync()
+    {
+        return await _dbContext
+            .EmojiVirtues.AsNoTracking()
+            .OrderByDescending(x => x.Virtue)
+            .ThenBy(x => x.EmojiId)
+            .ToListAsync();
+    }
+
+    public async Task<int> CountAsync()
+    {
+        return await _dbContext.EmojiVirtues.CountAsync();
+    }
+
+    public async Task<bool> RemoveEmojiAsync(string emojiId)
+    {
+        EmojiVirtue? record = await _dbContext.EmojiVirtues.FindAsync(emojiId);
+        if (record is null)
+            return false;
+
+        _dbContext.EmojiVirtues.Remove(record);
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
     public async Task UpsertVirtueAsync(string emojiId, int virtue)
     {
         EmojiVirtue? record = await _dbContext.EmojiVirtues.FindAsync(emojiId);
