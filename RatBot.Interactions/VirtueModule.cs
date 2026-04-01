@@ -8,6 +8,8 @@ namespace RatBot.Interactions;
 [Group("virtue", "Virtue commands.")]
 public sealed class VirtueModule(UserVirtueService userVirtueService) : SlashCommandBase
 {
+    private const ulong BeholdTargetUserId = 203864799870844928;
+
     [SlashCommand("me", "Show your current virtue.")]
     public async Task MeAsync()
     {
@@ -60,15 +62,10 @@ public sealed class VirtueModule(UserVirtueService userVirtueService) : SlashCom
             return;
         }
 
-        UserVirtue? lowestVirtue = await userVirtueService.GetLowestVirtueAsync();
-        if (lowestVirtue is null)
-        {
-            await RespondAsync("No virtue entries found yet.");
-            return;
-        }
+        int targetVirtue = await userVirtueService.GetVirtueAsync(BeholdTargetUserId);
 
         await RespondAsync(
-            $"Behold the lowest amongst thee: <@{lowestVirtue.UserId}> with virtue `{lowestVirtue.Virtue}`."
+            $"Behold the lowest amongst thee: <@{BeholdTargetUserId}> with virtue `{targetVirtue}`."
         );
     }
 }
