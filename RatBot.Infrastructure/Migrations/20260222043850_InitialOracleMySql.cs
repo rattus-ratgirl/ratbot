@@ -39,12 +39,7 @@ namespace RatBot.Infrastructure.Migrations
                         ScopeType = table.Column<int>(type: "int", nullable: false),
                         ScopeId = table.Column<ulong>(type: "bigint unsigned", nullable: false),
                         RoleId = table.Column<ulong>(type: "bigint unsigned", nullable: false),
-                        QuorumProportion = table.Column<double>(
-                            type: "double",
-                            precision: 6,
-                            scale: 4,
-                            nullable: false
-                        ),
+                        QuorumProportion = table.Column<double>(type: "double", precision: 6, scale: 4, nullable: false),
                     },
                     constraints: table =>
                     {
@@ -61,11 +56,7 @@ namespace RatBot.Infrastructure.Migrations
                 )
                 .Annotation("MySQL:Charset", "utf8mb4");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_QuorumScopeConfigs_GuildId",
-                table: "QuorumScopeConfigs",
-                column: "GuildId"
-            );
+            migrationBuilder.CreateIndex(name: "IX_QuorumScopeConfigs_GuildId", table: "QuorumScopeConfigs", column: "GuildId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_QuorumScopeConfigs_GuildId_ScopeType",

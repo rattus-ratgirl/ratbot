@@ -15,33 +15,11 @@ namespace RatBot.Interactions;
 public sealed class AdminModule : SlashCommandBase
 {
     internal const int DiscordMessageLimit = 2000;
-    private const int ModalMessageLimit = 4000;
     internal const string SayModalCustomId = "admin-say";
+    private const int ModalMessageLimit = 4000;
     private static readonly TimeSpan PendingRequestTtl = TimeSpan.FromMinutes(15);
     private static readonly ConcurrentDictionary<string, PendingAdminSayRequest> PendingRequests =
         new ConcurrentDictionary<string, PendingAdminSayRequest>();
-
-    /// <summary>
-    /// Opens a modal to send a multi-line bot-authored message to a target channel.
-    /// </summary>
-    /// <param name="channel">The destination channel.</param>
-    [SlashCommand("say", "Send a multiline message as the bot to a specific channel.")]
-    [RequireUserPermission(GuildPermission.Administrator)]
-    public async Task SayAsync(ITextChannel channel)
-    {
-        SocketGuild guild = Context.Guild!;
-        ChannelPermissions botPermissions = guild.CurrentUser.GetPermissions(channel);
-        if (!botPermissions.ViewChannel || !botPermissions.SendMessages)
-        {
-            await RespondAsync($"I don't have permission to post in {channel.Mention}.", ephemeral: true);
-            return;
-        }
-
-        PurgeExpiredPendingRequests();
-        PendingRequests[GetPendingRequestKey(guild.Id, Context.User.Id)] = new PendingAdminSayRequest(channel.Id, DateTimeOffset.UtcNow);
-
-        await RespondWithModalAsync<AdminSayModal>(SayModalCustomId);
-    }
 
     internal static bool TryTakePendingChannelId(ulong guildId, ulong userId, out ulong channelId)
     {
@@ -50,20 +28,6 @@ public sealed class AdminModule : SlashCommandBase
 
         channelId = pendingRequest?.ChannelId ?? 0;
         return found;
-    }
-
-    private static string GetPendingRequestKey(ulong guildId, ulong userId)
-    {
-        return $"{guildId}:{userId}";
-    }
-
-    private static void PurgeExpiredPendingRequests()
-    {
-        DateTimeOffset threshold = DateTimeOffset.UtcNow.Subtract(PendingRequestTtl);
-
-        foreach ((string key, PendingAdminSayRequest pendingRequest) in PendingRequests)
-            if (pendingRequest.CreatedAt < threshold)
-                PendingRequests.TryRemove(key, out _);
     }
 
     internal static IReadOnlyList<string> SplitIntoChunks(string message, int chunkSize)
@@ -91,7 +55,41 @@ public sealed class AdminModule : SlashCommandBase
         return chunks;
     }
 
-    private sealed record PendingAdminSayRequest(ulong ChannelId, DateTimeOffset CreatedAt);
+    private static string GetPendingRequestKey(ulong guildId, ulong userId)
+    {
+        return $"{guildId}:{userId}";
+    }
+
+    private static void PurgeExpiredPendingRequests()
+    {
+        DateTimeOffset threshold = DateTimeOffset.UtcNow.Subtract(PendingRequestTtl);
+
+        foreach ((string key, PendingAdminSayRequest pendingRequest) in PendingRequests)
+            if (pendingRequest.CreatedAt < threshold)
+                PendingRequests.TryRemove(key, out _);
+    }
+
+    /// <summary>
+    /// Opens a modal to send a multi-line bot-authored message to a target channel.
+    /// </summary>
+    /// <param name="channel">The destination channel.</param>
+    [SlashCommand("say", "Send a multiline message as the bot to a specific channel.")]
+    [RequireUserPermission(GuildPermission.Administrator)]
+    public async Task SayAsync(ITextChannel channel)
+    {
+        SocketGuild guild = Context.Guild!;
+        ChannelPermissions botPermissions = guild.CurrentUser.GetPermissions(channel);
+        if (!botPermissions.ViewChannel || !botPermissions.SendMessages)
+        {
+            await RespondAsync($"I don't have permission to post in {channel.Mention}.", ephemeral: true);
+            return;
+        }
+
+        PurgeExpiredPendingRequests();
+        PendingRequests[GetPendingRequestKey(guild.Id, Context.User.Id)] = new PendingAdminSayRequest(channel.Id, DateTimeOffset.UtcNow);
+
+        await RespondWithModalAsync<AdminSayModal>(SayModalCustomId);
+    }
 
     /// <summary>
     /// Modal payload for the admin say command.
@@ -115,4 +113,6 @@ public sealed class AdminModule : SlashCommandBase
         )]
         public string Message { get; set; } = string.Empty;
     }
+
+    private sealed record PendingAdminSayRequest(ulong ChannelId, DateTimeOffset CreatedAt);
 }

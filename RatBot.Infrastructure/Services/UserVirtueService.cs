@@ -28,11 +28,6 @@ public sealed class UserVirtueService
     {
         int clampedLimit = Math.Clamp(limit, 1, 100);
 
-        return _dbContext
-            .UserVirtues.AsNoTracking()
-            .OrderByDescending(x => x.Virtue)
-            .ThenBy(x => x.UserId)
-            .Take(clampedLimit)
-            .ToListAsync();
+        return _dbContext.UserVirtues.AsNoTracking().OrderByDescending(x => x.Virtue).ThenBy(x => x.UserId).Take(clampedLimit).ToListAsync();
     }
 }

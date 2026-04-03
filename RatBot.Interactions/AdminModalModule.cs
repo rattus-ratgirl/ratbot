@@ -29,10 +29,7 @@ public sealed class AdminModalModule : SlashCommandBase
         ITextChannel? channel = guild.GetTextChannel(channelId);
         if (channel is null)
         {
-            await RespondAsync(
-                "I couldn't find that destination channel anymore. Run `/admin say` again.",
-                ephemeral: true
-            );
+            await RespondAsync("I couldn't find that destination channel anymore. Run `/admin say` again.", ephemeral: true);
             return;
         }
 

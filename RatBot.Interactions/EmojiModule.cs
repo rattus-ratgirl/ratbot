@@ -14,10 +14,7 @@ namespace RatBot.Interactions;
 /// <param name="discordClient">The Discord socket client.</param>
 [Group("emoji", "Emoji analytics commands.")]
 [DefaultMemberPermissions(GuildPermission.MuteMembers)]
-public sealed class EmojiModule(
-    EmojiUsageService emojiUsageService,
-    DiscordSocketClient discordClient
-) : SlashCommandBase
+public sealed class EmojiModule(EmojiUsageService emojiUsageService, DiscordSocketClient discordClient) : SlashCommandBase
 {
     /// <summary>
     /// Shows the top emoji usage counts.

@@ -19,6 +19,12 @@ public sealed class EmojiUsageService
         _dbContext = dbContext;
     }
 
+    private static bool IsDuplicateKey(DbUpdateException ex)
+    {
+        string message = ex.InnerException?.Message ?? ex.Message;
+        return message.Contains("Duplicate entry", StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>
     /// Increments usage count for the provided emoji identifier.
     /// </summary>
@@ -64,11 +70,5 @@ public sealed class EmojiUsageService
             .ThenBy(x => x.EmojiId)
             .Take(clampedLimit)
             .ToListAsync();
-    }
-
-    private static bool IsDuplicateKey(DbUpdateException ex)
-    {
-        string message = ex.InnerException?.Message ?? ex.Message;
-        return message.Contains("Duplicate entry", StringComparison.OrdinalIgnoreCase);
     }
 }

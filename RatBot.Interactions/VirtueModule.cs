@@ -10,9 +10,7 @@ namespace RatBot.Interactions;
 /// </summary>
 /// <param name="userVirtueService">The user virtue service.</param>
 [Group("virtue", "Virtue commands.")]
-public sealed class VirtueModule(
-    UserVirtueService userVirtueService
-) : SlashCommandBase
+public sealed class VirtueModule(UserVirtueService userVirtueService) : SlashCommandBase
 {
     /// <summary>
     /// Shows the virtue leaderboard for the current guild.

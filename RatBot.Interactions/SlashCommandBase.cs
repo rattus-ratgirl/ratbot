@@ -13,6 +13,11 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     private const string GuildOnlyMessage = "This command can only be used in a guild.";
     private const string UnexpectedErrorMessage = "An unexpected error occurred while handling that command.";
 
+    private static InteractionResponse CreateResponse(string content, bool isEphemeral)
+    {
+        return isEphemeral ? InteractionResponse.Ephemeral(content) : InteractionResponse.Public(content);
+    }
+
     /// <summary>
     /// Replies ephemerally with plain text.
     /// </summary>
@@ -44,20 +49,12 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     /// <param name="defer">Whether the interaction should be deferred before running the handler.</param>
     /// <returns>A task that completes when execution and response handling are finished.</returns>
     protected Task ReplyAsync(Func<Task<string>> handler, bool defer = false) =>
-        RunAsync(
-            (Handler: handler, IsEphemeral: true),
-            static async state => CreateResponse(await state.Handler(), state.IsEphemeral),
-            defer
-        );
+        RunAsync((Handler: handler, IsEphemeral: true), static async state => CreateResponse(await state.Handler(), state.IsEphemeral), defer);
 
     /// <summary>
     /// Executes a handler using typed command arguments and replies ephemerally.
     /// </summary>
-    protected Task ReplyAsync<TArgs>(
-        TArgs args,
-        Func<TArgs, Task<string>> handler,
-        bool defer = false
-    ) =>
+    protected Task ReplyAsync<TArgs>(TArgs args, Func<TArgs, Task<string>> handler, bool defer = false) =>
         RunAsync(
             (Args: args, Handler: handler, IsEphemeral: true),
             static async state => CreateResponse(await state.Handler(state.Args), state.IsEphemeral),
@@ -67,24 +64,13 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     /// <summary>
     /// Executes a handler that returns plain text and replies publicly.
     /// </summary>
-    protected Task ReplyPublicAsync(
-        Func<Task<string>> handler,
-        bool defer = false
-    ) =>
-        RunAsync(
-            (Handler: handler, IsEphemeral: false),
-            static async state => CreateResponse(await state.Handler(), state.IsEphemeral),
-            defer
-        );
+    protected Task ReplyPublicAsync(Func<Task<string>> handler, bool defer = false) =>
+        RunAsync((Handler: handler, IsEphemeral: false), static async state => CreateResponse(await state.Handler(), state.IsEphemeral), defer);
 
     /// <summary>
     /// Executes a handler using typed command arguments and replies publicly.
     /// </summary>
-    protected Task ReplyPublicAsync<TArgs>(
-        TArgs args,
-        Func<TArgs, Task<string>> handler,
-        bool defer = false
-    ) =>
+    protected Task ReplyPublicAsync<TArgs>(TArgs args, Func<TArgs, Task<string>> handler, bool defer = false) =>
         RunAsync(
             (Args: args, Handler: handler, IsEphemeral: false),
             static async state => CreateResponse(await state.Handler(state.Args), state.IsEphemeral),
@@ -94,19 +80,13 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     /// <summary>
     /// Executes a handler that returns an explicit interaction response.
     /// </summary>
-    protected Task ReplyAsync(
-        Func<Task<InteractionResponse>> handler,
-        bool defer = false
-    ) => RunAsync(handler, static value => value(), defer);
+    protected Task ReplyAsync(Func<Task<InteractionResponse>> handler, bool defer = false) => RunAsync(handler, static value => value(), defer);
 
     /// <summary>
     /// Executes a handler using typed command arguments and an explicit interaction response.
     /// </summary>
-    protected Task ReplyAsync<TArgs>(
-        TArgs args,
-        Func<TArgs, Task<InteractionResponse>> handler,
-        bool defer = false
-    ) => RunAsync(args, handler, defer);
+    protected Task ReplyAsync<TArgs>(TArgs args, Func<TArgs, Task<InteractionResponse>> handler, bool defer = false) =>
+        RunAsync(args, handler, defer);
 
     /// <summary>
     /// Defers the current interaction using an ephemeral acknowledgement.
@@ -120,14 +100,9 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     /// <param name="text">The text to send.</param>
     protected async Task SendEphemeralAsync(string text) => await TrySendAsync(text, ephemeral: true);
 
-    private Task RunAsync(Func<Task<InteractionResponse>> handler, bool defer) =>
-        RunAsync(handler, static value => value(), defer);
+    private Task RunAsync(Func<Task<InteractionResponse>> handler, bool defer) => RunAsync(handler, static value => value(), defer);
 
-    private async Task RunAsync<TState>(
-        TState state,
-        Func<TState, Task<InteractionResponse>> handler,
-        bool defer
-    )
+    private async Task RunAsync<TState>(TState state, Func<TState, Task<InteractionResponse>> handler, bool defer)
     {
         if (Context.Guild is null)
         {
@@ -180,11 +155,6 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     private async Task TrySendAsync(InteractionResponse response)
     {
         await TrySendAsync(response.Content, response.IsEphemeral);
-    }
-
-    private static InteractionResponse CreateResponse(string content, bool isEphemeral)
-    {
-        return isEphemeral ? InteractionResponse.Ephemeral(content) : InteractionResponse.Public(content);
     }
 
     private async Task TrySendAsync(string content, bool ephemeral)

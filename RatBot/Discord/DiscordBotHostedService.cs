@@ -17,6 +17,13 @@ public sealed class DiscordBotHostedService : BackgroundService
     }
 
     /// <summary>
+    /// Stops the underlying bot service.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task that completes when shutdown finishes.</returns>
+    public override Task StopAsync(CancellationToken cancellationToken) => _botService.StopAsync();
+
+    /// <summary>
     /// Starts the bot service and waits until cancellation.
     /// </summary>
     /// <param name="ct">The cancellation token.</param>
@@ -26,11 +33,4 @@ public sealed class DiscordBotHostedService : BackgroundService
         await _botService.StartAsync(ct);
         await Task.Delay(Timeout.Infinite, ct);
     }
-
-    /// <summary>
-    /// Stops the underlying bot service.
-    /// </summary>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task that completes when shutdown finishes.</returns>
-    public override Task StopAsync(CancellationToken cancellationToken) => _botService.StopAsync();
 }

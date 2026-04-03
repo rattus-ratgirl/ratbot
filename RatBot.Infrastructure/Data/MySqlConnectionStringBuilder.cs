@@ -131,17 +131,11 @@ public static class MySqlConnectionStringBuilder
 
             // Map SSL settings
             string sslMode = "Preferred";
-            if (
-                queryParams.TryGetValue("useSSL", out string? useSSL)
-                && useSSL.Equals("false", StringComparison.OrdinalIgnoreCase)
-            )
+            if (queryParams.TryGetValue("useSSL", out string? useSSL) && useSSL.Equals("false", StringComparison.OrdinalIgnoreCase))
             {
                 sslMode = "None";
             }
-            else if (
-                queryParams.TryGetValue("requireSSL", out string? requireSSL)
-                && requireSSL.Equals("true", StringComparison.OrdinalIgnoreCase)
-            )
+            else if (queryParams.TryGetValue("requireSSL", out string? requireSSL) && requireSSL.Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 sslMode = "Required";
             }

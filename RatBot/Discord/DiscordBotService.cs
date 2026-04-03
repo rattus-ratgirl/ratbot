@@ -90,9 +90,7 @@ public sealed class DiscordBotService
                     try
                     {
                         await ClearGlobalApplicationCommandsAsync();
-                        _logger.Information(
-                            "Cleared global application commands to prevent duplicates while using per-guild registration."
-                        );
+                        _logger.Information("Cleared global application commands to prevent duplicates while using per-guild registration.");
                     }
                     catch (Exception clearEx)
                     {
@@ -149,15 +147,9 @@ public sealed class DiscordBotService
             if (result.IsSuccess)
                 return;
 
-            _logger.Warning(
-                "Interaction command failed. Error={Error} Reason={Reason}",
-                result.Error,
-                result.ErrorReason
-            );
+            _logger.Warning("Interaction command failed. Error={Error} Reason={Reason}", result.Error, result.ErrorReason);
 
-            string reason = string.IsNullOrWhiteSpace(result.ErrorReason)
-                ? "Command execution failed."
-                : result.ErrorReason;
+            string reason = string.IsNullOrWhiteSpace(result.ErrorReason) ? "Command execution failed." : result.ErrorReason;
 
             if (!interaction.HasResponded)
                 await interaction.RespondAsync($"Command failed: {reason}", ephemeral: true);

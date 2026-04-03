@@ -33,31 +33,11 @@ public static class Program
                         .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                         .Enrich.FromLogContext()
                         .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
-                        .WriteTo.File(
-                            "logs/verbose-.log",
-                            rollingInterval: RollingInterval.Day,
-                            restrictedToMinimumLevel: LogEventLevel.Verbose
-                        )
-                        .WriteTo.File(
-                            "logs/debug-.log",
-                            rollingInterval: RollingInterval.Day,
-                            restrictedToMinimumLevel: LogEventLevel.Debug
-                        )
-                        .WriteTo.File(
-                            "logs/info-.log",
-                            rollingInterval: RollingInterval.Day,
-                            restrictedToMinimumLevel: LogEventLevel.Information
-                        )
-                        .WriteTo.File(
-                            "logs/warning-.log",
-                            rollingInterval: RollingInterval.Day,
-                            restrictedToMinimumLevel: LogEventLevel.Warning
-                        )
-                        .WriteTo.File(
-                            "logs/error-.log",
-                            rollingInterval: RollingInterval.Day,
-                            restrictedToMinimumLevel: LogEventLevel.Error
-                        )
+                        .WriteTo.File("logs/verbose-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Verbose)
+                        .WriteTo.File("logs/debug-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Debug)
+                        .WriteTo.File("logs/info-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Information)
+                        .WriteTo.File("logs/warning-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Warning)
+                        .WriteTo.File("logs/error-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Error)
             )
             .ConfigureServices(
                 (ctx, services) =>

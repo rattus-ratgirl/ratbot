@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using RatBot.Domain.Entities;
 
 namespace RatBot.Infrastructure.Data;
@@ -7,6 +9,13 @@ namespace RatBot.Infrastructure.Data;
 /// </summary>
 public sealed class BotDbContext : DbContext
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BotDbContext"/> class.
+    /// </summary>
+    /// <param name="options">The DbContext options.</param>
+    public BotDbContext(DbContextOptions<BotDbContext> options)
+        : base(options) { }
+
     /// <summary>
     /// Gets the guild configuration set.
     /// </summary>
@@ -26,13 +35,6 @@ public sealed class BotDbContext : DbContext
     /// Gets the emoji usage set.
     /// </summary>
     public DbSet<EmojiUsageCount> EmojiUsageCounts => Set<EmojiUsageCount>();
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="BotDbContext"/> class.
-    /// </summary>
-    /// <param name="options">The DbContext options.</param>
-    public BotDbContext(DbContextOptions<BotDbContext> options)
-        : base(options) { }
 
     /// <summary>
     /// Configures entity mappings.
@@ -57,7 +59,19 @@ public sealed class BotDbContext : DbContext
 
             b.Property(x => x.GuildId).HasColumnType("bigint unsigned");
             b.Property(x => x.ScopeId).HasColumnType("bigint unsigned");
-            b.Property(x => x.RoleId).HasColumnType("bigint unsigned");
+            b.Property(x => x.RoleIds)
+                .HasColumnType("json")
+                .HasConversion(
+                    roleIds => JsonSerializer.Serialize(roleIds, (JsonSerializerOptions?)null),
+                    value => JsonSerializer.Deserialize<List<ulong>>(value, (JsonSerializerOptions?)null) ?? new List<ulong>()
+                )
+                .Metadata.SetValueComparer(
+                    new ValueComparer<IReadOnlyList<ulong>>(
+                        (left, right) => left!.SequenceEqual(right!),
+                        roleIds => roleIds.Aggregate(0, (hash, roleId) => HashCode.Combine(hash, roleId)),
+                        roleIds => roleIds.ToList()
+                    )
+                );
             b.Property(x => x.ScopeType).HasConversion<int>();
             b.Property(x => x.QuorumProportion).HasPrecision(6, 4);
 
