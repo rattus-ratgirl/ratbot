@@ -5,6 +5,9 @@ using IResult = Discord.Interactions.IResult;
 
 namespace RatBot.Discord;
 
+/// <summary>
+/// Coordinates Discord client lifecycle, interaction module registration, and interaction execution.
+/// </summary>
 public sealed class DiscordBotService
 {
     private readonly DiscordSocketClient _discordClient;
@@ -13,6 +16,14 @@ public sealed class DiscordBotService
     private readonly IConfiguration _config;
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DiscordBotService"/> class.
+    /// </summary>
+    /// <param name="discordClient">The Discord socket client.</param>
+    /// <param name="interactionService">The interaction service.</param>
+    /// <param name="services">The root service provider.</param>
+    /// <param name="config">The application configuration.</param>
+    /// <param name="logger">The logger instance.</param>
     public DiscordBotService(
         DiscordSocketClient discordClient,
         InteractionService interactionService,
@@ -28,6 +39,11 @@ public sealed class DiscordBotService
         _logger = logger.ForContext<DiscordBotService>();
     }
 
+    /// <summary>
+    /// Starts the Discord bot connection and interaction handlers.
+    /// </summary>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task that completes when startup work has finished.</returns>
     public async Task StartAsync(CancellationToken ct)
     {
         _discordClient.Log += msg =>
@@ -110,6 +126,10 @@ public sealed class DiscordBotService
         await _discordClient.StartAsync();
     }
 
+    /// <summary>
+    /// Stops the Discord bot connection.
+    /// </summary>
+    /// <returns>A task that completes when shutdown has finished.</returns>
     public async Task StopAsync()
     {
         await _discordClient.StopAsync();

@@ -1,30 +1,36 @@
 using System.Collections.Concurrent;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
+
+// ReSharper disable ClassNeverInstantiated.Global
 
 namespace RatBot.Interactions;
 
+/// <summary>
+/// Defines administrative slash commands.
+/// </summary>
 [Group("admin", "Administrative commands.")]
 [DefaultMemberPermissions(GuildPermission.Administrator)]
 public sealed class AdminModule : SlashCommandBase
 {
     internal const int DiscordMessageLimit = 2000;
-    internal const int ModalMessageLimit = 4000;
+    private const int ModalMessageLimit = 4000;
     internal const string SayModalCustomId = "admin-say";
     private static readonly TimeSpan PendingRequestTtl = TimeSpan.FromMinutes(15);
-    private static readonly ConcurrentDictionary<string, PendingAdminSayRequest> PendingRequests = new();
+    private static readonly ConcurrentDictionary<string, PendingAdminSayRequest> PendingRequests =
+        new ConcurrentDictionary<string, PendingAdminSayRequest>();
 
+    /// <summary>
+    /// Opens a modal to send a multi-line bot-authored message to a target channel.
+    /// </summary>
+    /// <param name="channel">The destination channel.</param>
     [SlashCommand("say", "Send a multiline message as the bot to a specific channel.")]
     [RequireUserPermission(GuildPermission.Administrator)]
     public async Task SayAsync(ITextChannel channel)
     {
-        if (Context.Guild is null)
-        {
-            await RespondAsync("This command can only be used in a guild.", ephemeral: true);
-            return;
-        }
-
-        ChannelPermissions botPermissions = Context.Guild.CurrentUser.GetPermissions(channel);
+        SocketGuild guild = Context.Guild!;
+        ChannelPermissions botPermissions = guild.CurrentUser.GetPermissions(channel);
         if (!botPermissions.ViewChannel || !botPermissions.SendMessages)
         {
             await RespondAsync($"I don't have permission to post in {channel.Mention}.", ephemeral: true);
@@ -32,10 +38,7 @@ public sealed class AdminModule : SlashCommandBase
         }
 
         PurgeExpiredPendingRequests();
-        PendingRequests[GetPendingRequestKey(Context.Guild.Id, Context.User.Id)] = new PendingAdminSayRequest(
-            channel.Id,
-            DateTimeOffset.UtcNow
-        );
+        PendingRequests[GetPendingRequestKey(guild.Id, Context.User.Id)] = new PendingAdminSayRequest(channel.Id, DateTimeOffset.UtcNow);
 
         await RespondWithModalAsync<AdminSayModal>(SayModalCustomId);
     }
@@ -90,10 +93,19 @@ public sealed class AdminModule : SlashCommandBase
 
     private sealed record PendingAdminSayRequest(ulong ChannelId, DateTimeOffset CreatedAt);
 
+    /// <summary>
+    /// Modal payload for the admin say command.
+    /// </summary>
     public sealed class AdminSayModal : IModal
     {
+        /// <summary>
+        /// Gets the modal title displayed to the user.
+        /// </summary>
         public string Title => "Send Message";
 
+        /// <summary>
+        /// Gets or sets the message body entered by the user.
+        /// </summary>
         [InputLabel("Message")]
         [ModalTextInput(
             "message",

@@ -5,27 +5,29 @@ using RatBot.Infrastructure.Services;
 
 namespace RatBot.Interactions;
 
+/// <summary>
+/// Defines virtue interactions.
+/// </summary>
+/// <param name="userVirtueService">The user virtue service.</param>
 [Group("virtue", "Virtue commands.")]
-public sealed class VirtueModule(UserVirtueService userVirtueService) : SlashCommandBase
+public sealed class VirtueModule(
+    UserVirtueService userVirtueService
+) : SlashCommandBase
 {
+    /// <summary>
+    /// Shows the virtue leaderboard for the current guild.
+    /// </summary>
     [SlashCommand("leaderboard", "Show the top 20 users by virtue.")]
-    public async Task LeaderboardAsync()
+    public Task LeaderboardAsync()
     {
-        if (Context.Guild is null)
-        {
-            await RespondAsync("This command can only be used in a guild.", ephemeral: true);
-            return;
-        }
+        return ReplyAsync(GetLeaderboardResponseAsync, defer: true);
+    }
 
-        if (!await TryDeferEphemeralAsync())
-            return;
-
+    private async Task<string> GetLeaderboardResponseAsync()
+    {
         List<UserVirtue> topUsers = await userVirtueService.GetTopVirtuesAsync(20);
         if (topUsers.Count == 0)
-        {
-            await SendEphemeralAsync("No virtue entries found yet.");
-            return;
-        }
+            return "No virtue entries found yet.";
 
         StringBuilder text = new StringBuilder("Virtue leaderboard:\n");
         int rank = 1;
@@ -37,6 +39,6 @@ public sealed class VirtueModule(UserVirtueService userVirtueService) : SlashCom
             rank++;
         }
 
-        await SendEphemeralAsync(text.ToString());
+        return text.ToString();
     }
 }

@@ -1,28 +1,32 @@
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace RatBot.Interactions;
 
+/// <summary>
+/// Handles admin modal submissions.
+/// </summary>
 [DefaultMemberPermissions(GuildPermission.Administrator)]
 public sealed class AdminModalModule : SlashCommandBase
 {
+    /// <summary>
+    /// Handles submission of the admin say modal and posts the message to the queued destination channel.
+    /// </summary>
+    /// <param name="modal">The modal payload.</param>
     [ModalInteraction(AdminModule.SayModalCustomId)]
     [RequireUserPermission(GuildPermission.Administrator)]
     public async Task SayModalAsync(AdminModule.AdminSayModal modal)
     {
-        if (Context.Guild is null)
-        {
-            await RespondAsync("This command can only be used in a guild.", ephemeral: true);
-            return;
-        }
+        SocketGuild guild = Context.Guild!;
 
-        if (!AdminModule.TryTakePendingChannelId(Context.Guild.Id, Context.User.Id, out ulong channelId))
+        if (!AdminModule.TryTakePendingChannelId(guild.Id, Context.User.Id, out ulong channelId))
         {
             await RespondAsync("No pending destination channel was found. Run `/admin say` again.", ephemeral: true);
             return;
         }
 
-        ITextChannel? channel = Context.Guild.GetTextChannel(channelId);
+        ITextChannel? channel = guild.GetTextChannel(channelId);
         if (channel is null)
         {
             await RespondAsync(
@@ -32,7 +36,7 @@ public sealed class AdminModalModule : SlashCommandBase
             return;
         }
 
-        ChannelPermissions botPermissions = Context.Guild.CurrentUser.GetPermissions(channel);
+        ChannelPermissions botPermissions = guild.CurrentUser.GetPermissions(channel);
         if (!botPermissions.ViewChannel || !botPermissions.SendMessages)
         {
             await RespondAsync($"I don't have permission to post in {channel.Mention}.", ephemeral: true);

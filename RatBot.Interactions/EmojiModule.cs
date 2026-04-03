@@ -7,22 +7,32 @@ using RatBot.Infrastructure.Services;
 
 namespace RatBot.Interactions;
 
+/// <summary>
+/// Defines emoji analytics interactions.
+/// </summary>
+/// <param name="emojiUsageService">The emoji usage service.</param>
+/// <param name="discordClient">The Discord socket client.</param>
 [Group("emoji", "Emoji analytics commands.")]
 [DefaultMemberPermissions(GuildPermission.MuteMembers)]
-public sealed class EmojiModule(EmojiUsageService emojiUsageService, DiscordSocketClient discordClient) : SlashCommandBase
+public sealed class EmojiModule(
+    EmojiUsageService emojiUsageService,
+    DiscordSocketClient discordClient
+) : SlashCommandBase
 {
+    /// <summary>
+    /// Shows the top emoji usage counts.
+    /// </summary>
     [SlashCommand("usage", "Show the top 25 emojis by usage.")]
-    public async Task UsageAsync()
+    public Task UsageAsync()
     {
-        if (!await TryDeferEphemeralAsync())
-            return;
+        return ReplyAsync(GetUsageResponseAsync, defer: true);
+    }
 
+    private async Task<string> GetUsageResponseAsync()
+    {
         List<EmojiUsageCount> topUsage = await emojiUsageService.GetTopUsageAsync(25);
         if (topUsage.Count == 0)
-        {
-            await SendEphemeralAsync("No emoji usage has been recorded yet.");
-            return;
-        }
+            return "No emoji usage has been recorded yet.";
 
         StringBuilder text = new StringBuilder("Top emoji usage:\n");
 
@@ -32,7 +42,7 @@ public sealed class EmojiModule(EmojiUsageService emojiUsageService, DiscordSock
             text.AppendLine($"{emojiDisplay}: {row.UsageCount}");
         }
 
-        await SendEphemeralAsync(text.ToString());
+        return text.ToString();
     }
 
     private string FormatEmojiForDisplay(string emojiId)

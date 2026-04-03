@@ -6,8 +6,15 @@ using Serilog.Events;
 
 namespace RatBot;
 
+/// <summary>
+/// Application bootstrap entry point.
+/// </summary>
 public static class Program
 {
+    /// <summary>
+    /// Creates and runs the RatBot host.
+    /// </summary>
+    /// <param name="args">The process command-line arguments.</param>
     public static async Task Main(string[] args)
     {
         Env.TraversePath().Load();

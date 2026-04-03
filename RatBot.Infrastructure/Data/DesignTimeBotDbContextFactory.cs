@@ -1,11 +1,19 @@
-﻿using DotNetEnv;
+using DotNetEnv;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
 namespace RatBot.Infrastructure.Data;
 
+/// <summary>
+/// Creates <see cref="BotDbContext"/> instances for design-time tooling such as EF Core migrations.
+/// </summary>
 public sealed class DesignTimeBotDbContextFactory : IDesignTimeDbContextFactory<BotDbContext>
 {
+    /// <summary>
+    /// Creates a design-time <see cref="BotDbContext"/> instance.
+    /// </summary>
+    /// <param name="args">Design-time arguments.</param>
+    /// <returns>The constructed <see cref="BotDbContext"/> instance.</returns>
     public BotDbContext CreateDbContext(string[] args)
     {
         Env.TraversePath().Load();

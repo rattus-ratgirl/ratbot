@@ -1,27 +1,33 @@
-﻿using Discord;
+using Discord;
 using Discord.Interactions;
 using Serilog;
 
 namespace RatBot.Interactions;
 
+/// <summary>
+/// Defines greeting interactions.
+/// </summary>
 public sealed class HelloModule : SlashCommandBase
 {
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HelloModule"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance.</param>
     public HelloModule(ILogger logger)
     {
         _logger = logger.ForContext<HelloModule>();
     }
 
+    /// <summary>
+    /// Sends a greeting response to the invoking user.
+    /// </summary>
     [SlashCommand("hello", "Says hello!")]
     [RequireUserPermission(GuildPermission.SendMessages)]
-    public async Task HelloAsync()
+    public Task HelloAsync()
     {
         _logger.Information("Received hello command from {User}", Context.User.Username);
-        await RespondAsync($"Hello, {Context.User.Mention}!", ephemeral: true);
-
-        // Alternative way to defer and send a followup message in the channel
-        // await DeferAsync(ephemeral: false);
-        // await FollowupAsync($"Hello, {Context.User.Mention}!");
+        return ReplyAsync($"Hello, {Context.User.Mention}!");
     }
 }

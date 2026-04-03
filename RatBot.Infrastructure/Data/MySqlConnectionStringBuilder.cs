@@ -1,9 +1,17 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 
 namespace RatBot.Infrastructure.Data;
 
+/// <summary>
+/// Builds MySQL connection strings from environment-backed configuration.
+/// </summary>
 public static class MySqlConnectionStringBuilder
 {
+    /// <summary>
+    /// Builds a MySQL connection string from configured values.
+    /// </summary>
+    /// <param name="config">The application configuration root.</param>
+    /// <returns>The MySQL connection string.</returns>
     public static string Build(IConfiguration config)
     {
         // Check for complete connection string first
