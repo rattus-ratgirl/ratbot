@@ -3,6 +3,7 @@ using RatBot.Discord;
 using RatBot.Infrastructure.Data;
 using RatBot.Infrastructure.Services;
 using Serilog.Events;
+using Serilog.Sinks.Grafana.Loki;
 
 namespace RatBot;
 
@@ -27,17 +28,22 @@ public static class Program
                 }
             )
             .UseSerilog(
-                (_, _, loggerConfiguration) =>
+                (ctx, _, loggerConfiguration) =>
+                {
                     loggerConfiguration
                         .MinimumLevel.Verbose()
                         .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                         .Enrich.FromLogContext()
+                        .Enrich.WithProperty("Application", "RatBot")
                         .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
                         .WriteTo.File("logs/verbose-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Verbose)
                         .WriteTo.File("logs/debug-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Debug)
                         .WriteTo.File("logs/info-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Information)
                         .WriteTo.File("logs/warning-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Warning)
-                        .WriteTo.File("logs/error-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Error)
+                        .WriteTo.File("logs/error-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Error);
+
+                    ConfigureGrafanaLoki(ctx.Configuration, loggerConfiguration);
+                }
             )
             .ConfigureServices(
                 (ctx, services) =>
@@ -114,5 +120,35 @@ public static class Program
             Log.Error(ex, "Database migration/creation failed.");
             throw;
         }
+    }
+
+    private static void ConfigureGrafanaLoki(IConfiguration config, LoggerConfiguration loggerConfiguration)
+    {
+        string? uri = config["Grafana:Logs:Uri"];
+        if (string.IsNullOrWhiteSpace(uri))
+            return;
+
+        string? username = config["Grafana:Logs:Username"];
+        string? password = config["Grafana:Logs:Password"];
+        string? environment = config["Grafana:Logs:Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "production";
+        string? host = Environment.MachineName;
+
+        LokiCredentials? credentials = null;
+        if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+        {
+            credentials = new LokiCredentials { Login = username, Password = password };
+        }
+
+        loggerConfiguration.WriteTo.GrafanaLoki(
+            uri,
+            labels:
+            [
+                new LokiLabel { Key = "app", Value = "ratbot" },
+                new LokiLabel { Key = "environment", Value = environment },
+                new LokiLabel { Key = "host", Value = host },
+            ],
+            credentials: credentials,
+            restrictedToMinimumLevel: LogEventLevel.Information
+        );
     }
 }

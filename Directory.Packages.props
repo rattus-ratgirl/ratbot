@@ -25,5 +25,6 @@
         <PackageVersion Include="Serilog.Filters.Expressions" Version="2.1.0" />
         <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
         <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+        <PackageVersion Include="Serilog.Sinks.Grafana.Loki" Version="8.3.2" />
     </ItemGroup>
 </Project>

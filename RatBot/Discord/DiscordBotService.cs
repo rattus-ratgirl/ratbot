@@ -110,6 +110,10 @@ public sealed class DiscordBotService
         };
 
         _discordClient.InteractionCreated += HandleInteractionAsync;
+        _discordClient.ReactionAdded += HandleReactionAddedAsync;
+        _discordClient.ReactionRemoved += HandleReactionRemovedAsync;
+        _discordClient.ReactionsCleared += HandleReactionsClearedAsync;
+        _discordClient.ReactionsRemovedForEmote += HandleReactionsRemovedForEmoteAsync;
 
         // Forward InteractionService logs to console to aid troubleshooting
         _interactionService.Log += msg =>
@@ -174,6 +178,51 @@ public sealed class DiscordBotService
         }
     }
 
+    private async Task HandleReactionAddedAsync(
+        Cacheable<IUserMessage, ulong> message,
+        Cacheable<IMessageChannel, ulong> channel,
+        SocketReaction reaction
+    )
+    {
+        await LogReactionEventAsync("added", reaction);
+    }
+
+    private async Task HandleReactionRemovedAsync(
+        Cacheable<IUserMessage, ulong> cachedMessage,
+        Cacheable<IMessageChannel, ulong> cachedChannel,
+        SocketReaction reaction
+    )
+    {
+        await LogReactionEventAsync("removed", reaction);
+    }
+
+    private Task HandleReactionsClearedAsync(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
+    {
+        try
+        {
+            _logger.ForContext("ReactionEventType", "cleared_all").Information("Discord reaction event recorded.");
+
+            return Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException(exception);
+        }
+    }
+
+    private Task HandleReactionsRemovedForEmoteAsync(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, IEmote emote)
+    {
+        try
+        {
+            LogReactionEmoteClearEvent(emote);
+            return Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException(exception);
+        }
+    }
+
     private async Task ClearGlobalApplicationCommandsAsync()
     {
         // Enumerate and delete existing global commands
@@ -209,9 +258,44 @@ public sealed class DiscordBotService
         if (message.Exception is not null)
         {
             _logger.Write(level, message.Exception, "[{Category}] {Source}: {Message}", category, source, message.Message);
+
             return;
         }
 
         _logger.Write(level, "[{Category}] {Source}: {Message}", category, source, message.Message);
+    }
+
+    private Task LogReactionEventAsync(string reactionEventType, SocketReaction reaction)
+    {
+        try
+        {
+            string emojiName = reaction.Emote.Name;
+            ulong? emojiId = reaction.Emote is Emote customEmote ? customEmote.Id : null;
+
+            _logger
+                .ForContext("ReactionEventType", reactionEventType)
+                .ForContext("EmojiName", emojiName)
+                .ForContext("EmojiId", emojiId)
+                .ForContext("IsCustomEmoji", emojiId.HasValue)
+                .Information("Discord reaction event recorded.");
+
+            return Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException(exception);
+        }
+    }
+
+    private void LogReactionEmoteClearEvent(IEmote emote)
+    {
+        ulong? emojiId = emote is Emote customEmote ? customEmote.Id : null;
+
+        _logger
+            .ForContext("ReactionEventType", "cleared_emote")
+            .ForContext("EmojiName", emote.Name)
+            .ForContext("EmojiId", emojiId)
+            .ForContext("IsCustomEmoji", emojiId.HasValue)
+            .Information("Discord reaction event recorded.");
     }
 }

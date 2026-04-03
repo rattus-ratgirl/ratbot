@@ -31,6 +31,7 @@
         <PackageReference Include="Serilog.Sinks.File" />
         <PackageReference Include="Serilog.Sinks.Console" />
         <PackageReference Include="Serilog.Extensions.Hosting" />
+        <PackageReference Include="Serilog.Sinks.Grafana.Loki" />
     </ItemGroup>
 
     <ItemGroup>
