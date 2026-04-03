@@ -1,16 +1,10 @@
 using System.Text;
 using Discord.Interactions;
 using RatBot.Domain.Entities;
-using RatBot.Infrastructure.Services;
 
-namespace RatBot.Interactions;
+namespace RatBot.Interactions.Features.Virtue;
 
-/// <summary>
-/// Defines virtue interactions.
-/// </summary>
-/// <param name="userVirtueService">The user virtue service.</param>
-[Group("virtue", "Virtue commands.")]
-public sealed class VirtueModule(UserVirtueService userVirtueService) : SlashCommandBase
+public sealed partial class VirtueModule
 {
     /// <summary>
     /// Shows the virtue leaderboard for the current guild.
@@ -23,7 +17,7 @@ public sealed class VirtueModule(UserVirtueService userVirtueService) : SlashCom
 
     private async Task<string> GetLeaderboardResponseAsync()
     {
-        List<UserVirtue> topUsers = await userVirtueService.GetTopVirtuesAsync(20);
+        List<UserVirtue> topUsers = await _userVirtueService.GetTopVirtuesAsync(20);
         if (topUsers.Count == 0)
             return "No virtue entries found yet.";
 

@@ -1,9 +1,10 @@
 using Discord;
 using Discord.Interactions;
 using Discord.Net;
+using RatBot.Interactions.Common.Responses;
 using Serilog;
 
-namespace RatBot.Interactions;
+namespace RatBot.Interactions.Common.Discord;
 
 /// <summary>
 /// Provides shared helpers for guild-based Discord slash-command and modal modules.

@@ -1,4 +1,4 @@
-namespace RatBot.Interactions;
+namespace RatBot.Interactions.Common.Responses;
 
 /// <summary>
 /// Represents a Discord interaction response whose visibility is chosen at runtime.

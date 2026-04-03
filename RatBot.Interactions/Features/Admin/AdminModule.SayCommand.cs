@@ -3,16 +3,9 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
-// ReSharper disable UnusedType.Global
+namespace RatBot.Interactions.Features.Admin;
 
-namespace RatBot.Interactions;
-
-/// <summary>
-/// Defines administrative slash commands.
-/// </summary>
-[Group("admin", "Administrative commands.")]
-[DefaultMemberPermissions(GuildPermission.Administrator)]
-public sealed class AdminModule : SlashCommandBase
+public sealed partial class AdminModule
 {
     private const int DiscordMessageLimit = 2000;
     private const string SayModalCustomId = "admin-say";
