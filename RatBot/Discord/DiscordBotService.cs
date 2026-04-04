@@ -75,11 +75,22 @@ public sealed class DiscordBotService
         await _interactionService.AddModulesAsync(slashCommandsAssembly, _services);
         _logger.Information("Registered {InteractionModuleCount} interaction modules.", _interactionService.Modules.Count);
 
+        foreach (string? moduleName in _interactionService.Modules.Select(module => module.Name))
+            _logger.Information("  {ModuleName}", moduleName);
+
+        _logger.Information(
+            "Discovered commands. Slash={SlashCount} Context={ContextCount} Component={ComponentCount}",
+            _interactionService.SlashCommands.Count,
+            _interactionService.ContextCommands.Count,
+            _interactionService.ComponentCommands.Count
+        );
+
         _discordClient.Ready += async () =>
         {
             try
             {
                 string guildIdStr = _config["Discord:GuildId"] ?? throw new InvalidOperationException("Discord guild id missing");
+
                 if (!ulong.TryParse(guildIdStr, out ulong guildId))
                     throw new InvalidOperationException("Discord guild id is invalid");
 
