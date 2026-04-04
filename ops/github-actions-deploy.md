@@ -45,11 +45,13 @@ You can store these at repository scope, or per GitHub Environment (`shared`, `s
 
 ## VPS-side Prerequisites
 
-- Directories must already exist and contain correct compose files + `.env` files:
+- Directories must already exist on the VPS:
   - `/opt/ratbot/shared`
   - `/opt/ratbot/production`
   - `/opt/ratbot/staging`
-- The workflow does not create or upload `.env` files.
+- The deploy helper syncs non-secret compose/config assets from the repository to the VPS before running Docker Compose.
+- The workflow still does not create or upload real `.env` files.
+- Each stack directory must therefore already contain a valid server-side `.env` file before deployment can succeed.
 - `deploy` user must:
   - Be allowed to SSH
   - Be able to run Docker/Compose (typically via `docker` group)
@@ -66,7 +68,7 @@ One-time setup on VPS (as `deploy`):
 docker login ghcr.io
 ```
 
-This stores credentials in `~/.docker/config.json` for future `docker compose pull`.
+This stores credentials for future `docker compose pull`.
 
 For private images, use a GitHub token/PAT with `read:packages` scope for that login.
 

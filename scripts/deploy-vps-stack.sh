@@ -6,6 +6,23 @@ project=""
 remote_dir=""
 image_ref=""
 
+usage() {
+  cat <<'EOF'
+Usage:
+  deploy-vps-stack.sh --stack <shared|production|staging> --project <name> --remote-dir <path> [--image-ref <ref>]
+
+Behavior:
+  - Syncs non-secret compose/config assets from the repository to the VPS
+  - Leaves server-side .env files in place
+  - Runs docker compose pull/up on the remote host
+EOF
+}
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+local_compose=""
+local_env_example=""
+local_sync_dir=""
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --stack)
@@ -47,6 +64,32 @@ if [[ "$stack" != "shared" && "$stack" != "production" && "$stack" != "staging" 
   exit 1
 fi
 
+case "$stack" in
+  shared)
+    local_compose="$repo_root/docker-compose.yml"
+    local_env_example="$repo_root/env/shared.env.example"
+    local_sync_dir="$repo_root/docker"
+    ;;
+  production)
+    local_compose="$repo_root/docker-compose.production.yml"
+    local_env_example="$repo_root/env/production.env.example"
+    ;;
+  staging)
+    local_compose="$repo_root/docker-compose.staging.yml"
+    local_env_example="$repo_root/env/staging.env.example"
+    ;;
+esac
+
+if [[ ! -f "$local_compose" ]]; then
+  echo "Local compose file not found: $local_compose" >&2
+  exit 1
+fi
+
+if [[ ! -f "$local_env_example" ]]; then
+  echo "Local env example file not found: $local_env_example" >&2
+  exit 1
+fi
+
 : "${VPS_HOST:?VPS_HOST is required}"
 : "${VPS_SSH_PRIVATE_KEY:?VPS_SSH_PRIVATE_KEY is required}"
 
@@ -79,6 +122,22 @@ ssh_opts=(
 
 image_ref_remote="$image_ref"
 
+remote_tmp_dir="${remote_dir}/.sync-tmp"
+
+ssh "${ssh_opts[@]}" "${vps_user}@${VPS_HOST}" \
+  "REMOTE_DIR='$remote_dir' REMOTE_TMP_DIR='$remote_tmp_dir' bash -s" <<'REMOTE_PREP_EOF'
+set -euo pipefail
+mkdir -p "$REMOTE_DIR" "$REMOTE_TMP_DIR"
+REMOTE_PREP_EOF
+
+scp "${ssh_opts[@]}" "$local_compose" "${vps_user}@${VPS_HOST}:${remote_tmp_dir}/compose.yaml"
+scp "${ssh_opts[@]}" "$local_env_example" "${vps_user}@${VPS_HOST}:${remote_tmp_dir}/.env.example"
+
+if [[ -n "$local_sync_dir" ]]; then
+  tar -C "$repo_root" -cf - "$(basename "$local_sync_dir")" | \
+    ssh "${ssh_opts[@]}" "${vps_user}@${VPS_HOST}" "mkdir -p '$remote_tmp_dir' && tar -C '$remote_tmp_dir' -xf -"
+fi
+
 ssh "${ssh_opts[@]}" "${vps_user}@${VPS_HOST}" \
   "STACK='$stack' PROJECT='$project' REMOTE_DIR='$remote_dir' IMAGE_REF='$image_ref_remote' bash -s" <<'REMOTE_EOF'
 set -euo pipefail
@@ -90,8 +149,28 @@ fi
 
 cd "$REMOTE_DIR"
 
+if [[ -d .sync-tmp/docker ]]; then
+  rm -rf docker
+  mv .sync-tmp/docker ./docker
+fi
+
+mv .sync-tmp/compose.yaml ./compose.yaml
+mv .sync-tmp/.env.example ./.env.example
+rmdir .sync-tmp 2>/dev/null || true
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "docker command not found on remote host." >&2
+  exit 1
+fi
+
+compose_args=(-p "$PROJECT" -f compose.yaml)
+if [[ -f .env ]]; then
+  compose_args+=(--env-file .env)
+elif [[ -f .env.example ]]; then
+  echo "Missing required server-side .env in $REMOTE_DIR. A .env.example is present as a template." >&2
+  exit 1
+else
+  echo "Missing required server-side .env in $REMOTE_DIR." >&2
   exit 1
 fi
 
@@ -99,8 +178,9 @@ if [[ -n "${IMAGE_REF}" ]]; then
   export RATBOT_IMAGE="$IMAGE_REF"
 fi
 
-docker compose -p "$PROJECT" pull
-docker compose -p "$PROJECT" up -d --remove-orphans
+docker compose "${compose_args[@]}" config >/dev/null
+docker compose "${compose_args[@]}" pull
+docker compose "${compose_args[@]}" up -d --remove-orphans
 
 if [[ -n "${IMAGE_REF}" ]]; then
   state_dir=".deploy-state"
@@ -113,5 +193,5 @@ if [[ -n "${IMAGE_REF}" ]]; then
   printf '%s\n' "$IMAGE_REF" > "$state_dir/current-image.txt"
 fi
 
-docker compose -p "$PROJECT" ps
+docker compose "${compose_args[@]}" ps
 REMOTE_EOF
