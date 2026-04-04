@@ -1,6 +1,3 @@
-using RatBot.Interactions.Common.Discord;
-using Serilog;
-
 namespace RatBot.Interactions.Features.Hello;
 
 /// <summary>

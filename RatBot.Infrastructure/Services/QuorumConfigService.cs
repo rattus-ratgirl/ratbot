@@ -1,4 +1,3 @@
-using RatBot.Domain.Entities;
 using RatBot.Domain.Enums;
 using RatBot.Infrastructure.Data;
 

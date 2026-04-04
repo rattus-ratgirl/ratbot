@@ -1,4 +1,3 @@
-using RatBot.Domain.Entities;
 using RatBot.Infrastructure.Data;
 
 namespace RatBot.Infrastructure.Services;

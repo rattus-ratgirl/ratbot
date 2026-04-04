@@ -1,6 +1,4 @@
-using Discord;
-using Discord.Interactions;
-using RatBot.Interactions.Common.Discord;
+
 
 // ReSharper disable UnusedType.Global
 

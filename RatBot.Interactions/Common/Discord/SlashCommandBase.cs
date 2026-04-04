@@ -1,8 +1,5 @@
-using Discord;
-using Discord.Interactions;
 using Discord.Net;
 using RatBot.Interactions.Common.Responses;
-using Serilog;
 
 namespace RatBot.Interactions.Common.Discord;
 

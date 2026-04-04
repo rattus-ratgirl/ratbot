@@ -1,6 +1,3 @@
-using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
 using RatBot.Domain.Enums;
 
 namespace RatBot.Interactions.Features.Quorum;

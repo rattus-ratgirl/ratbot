@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using RatBot.Domain.Enums;
-
 namespace RatBot.Domain.Entities;
 
 /// <summary>

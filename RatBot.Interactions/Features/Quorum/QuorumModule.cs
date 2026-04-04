@@ -1,7 +1,4 @@
-using Discord.Interactions;
 using RatBot.Infrastructure.Services;
-using RatBot.Interactions.Common.Discord;
-using Serilog;
 
 namespace RatBot.Interactions.Features.Quorum;
 
