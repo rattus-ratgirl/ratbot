@@ -2,16 +2,19 @@ using System.Collections.Concurrent;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using JetBrains.Annotations;
+using RatBot.Interactions.Common.Discord;
 
 namespace RatBot.Interactions.Features.Admin;
 
+[UsedImplicitly]
 public sealed partial class AdminModule
 {
-    private const int DiscordMessageLimit = 2000;
     private const string SayModalCustomId = "admin-say";
     private const int ModalMessageLimit = 4000;
 
     private static readonly TimeSpan PendingRequestTtl = TimeSpan.FromMinutes(5);
+
     private static readonly ConcurrentDictionary<string, PendingAdminSayRequest> PendingRequests =
         new ConcurrentDictionary<string, PendingAdminSayRequest>();
 
@@ -22,31 +25,6 @@ public sealed partial class AdminModule
 
         channelId = pendingRequest?.ChannelId ?? 0;
         return found;
-    }
-
-    private static IReadOnlyList<string> SplitIntoChunks(string message, int chunkSize)
-    {
-        List<string> chunks = [];
-        int index = 0;
-
-        while (index < message.Length)
-        {
-            int remainingLength = message.Length - index;
-            if (remainingLength <= chunkSize)
-            {
-                chunks.Add(message[index..]);
-                break;
-            }
-
-            string window = message.Substring(index, chunkSize);
-            int splitAt = window.LastIndexOf('\n');
-            int chunkLength = splitAt > 0 ? splitAt + 1 : chunkSize;
-
-            chunks.Add(message.Substring(index, chunkLength));
-            index += chunkLength;
-        }
-
-        return chunks;
     }
 
     private static string GetPendingRequestKey(ulong guildId, ulong userId) => $"{guildId}:{userId}";
@@ -86,7 +64,7 @@ public sealed partial class AdminModule
     /// Handles submission of the admin say modal and posts the message to the queued destination channel.
     /// </summary>
     /// <param name="modal">The modal payload.</param>
-    [ModalInteraction(SayModalCustomId)]
+    [ModalInteraction(SayModalCustomId, ignoreGroupNames: true)]
     [RequireUserPermission(GuildPermission.Administrator)]
     public async Task SayModalAsync(AdminSayModal modal)
     {
@@ -123,7 +101,7 @@ public sealed partial class AdminModule
         if (!await TryDeferEphemeralAsync())
             return;
 
-        IReadOnlyList<string> messageChunks = SplitIntoChunks(message, DiscordMessageLimit);
+        IReadOnlyList<string> messageChunks = DiscordMessageChunker.SplitForMessageLimit(message);
         foreach (string chunk in messageChunks)
             await channel.SendMessageAsync(chunk);
 
@@ -134,13 +112,14 @@ public sealed partial class AdminModule
         }
 
         await SendEphemeralAsync(
-            $"Sent your message to {channel.Mention} in {messageChunks.Count} parts (Discord's limit is {DiscordMessageLimit} characters per message)."
+            $"Sent your message to {channel.Mention} in {messageChunks.Count} parts (Discord's limit is {DiscordMessageChunker.DiscordMessageCharacterLimit} characters per message)."
         );
     }
 
     /// <summary>
     /// Modal payload for the admin say command.
     /// </summary>
+    [UsedImplicitly]
     public sealed class AdminSayModal : IModal
     {
         /// <summary>

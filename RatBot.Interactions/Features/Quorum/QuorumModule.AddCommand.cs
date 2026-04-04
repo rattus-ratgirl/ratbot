@@ -7,20 +7,6 @@ namespace RatBot.Interactions.Features.Quorum;
 
 public sealed partial class QuorumModule
 {
-    /// <summary>
-    /// Adds a quorum configuration for a channel or category scope.
-    /// </summary>
-    /// <param name="scopeId">The channel or category identifier.</param>
-    /// <param name="roleIds">The comma-separated role identifiers used for quorum counting.</param>
-    /// <param name="proportion">The quorum proportion in decimal form.</param>
-    [SlashCommand("add", "Add a quorum config for a channel or category. The Scope ID must be a channel or category ID.")]
-    [RequireUserPermission(GuildPermission.Administrator)]
-    public Task AddAsync(string scopeId, string roleIds, double proportion)
-    {
-        AddQuorumConfigArgs args = new AddQuorumConfigArgs(scopeId, roleIds, proportion);
-        return ReplyAsync(args, AddResponseAsync);
-    }
-
     private static ulong[] ParseRoleIds(string roleIds)
     {
         if (string.IsNullOrWhiteSpace(roleIds))
@@ -38,6 +24,20 @@ public sealed partial class QuorumModule
         }
 
         return parsedRoleIds.Distinct().ToArray();
+    }
+
+    /// <summary>
+    /// Adds a quorum configuration for a channel or category scope.
+    /// </summary>
+    /// <param name="scopeId">The channel or category identifier.</param>
+    /// <param name="roleIds">The comma-separated role identifiers used for quorum counting.</param>
+    /// <param name="proportion">The quorum proportion in decimal form.</param>
+    [SlashCommand("add", "Add a quorum config for a channel or category. The Scope ID must be a channel or category ID.")]
+    [RequireUserPermission(GuildPermission.Administrator)]
+    public Task AddAsync(string scopeId, string roleIds, double proportion)
+    {
+        AddQuorumConfigArgs args = new AddQuorumConfigArgs(scopeId, roleIds, proportion);
+        return ReplyAsync(args, AddResponseAsync);
     }
 
     private async Task<string> AddResponseAsync(AddQuorumConfigArgs args)

@@ -17,19 +17,9 @@ public sealed class BotDbContext : DbContext
         : base(options) { }
 
     /// <summary>
-    /// Gets the guild configuration set.
-    /// </summary>
-    public DbSet<GuildConfig> GuildConfigs => Set<GuildConfig>();
-
-    /// <summary>
     /// Gets the quorum scope configuration set.
     /// </summary>
     public DbSet<QuorumScopeConfig> QuorumScopeConfigs => Set<QuorumScopeConfig>();
-
-    /// <summary>
-    /// Gets the user virtue set.
-    /// </summary>
-    public DbSet<UserVirtue> UserVirtues => Set<UserVirtue>();
 
     /// <summary>
     /// Gets the emoji usage set.
@@ -42,13 +32,6 @@ public sealed class BotDbContext : DbContext
     /// <param name="modelBuilder">The model builder instance.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<GuildConfig>(b =>
-        {
-            b.HasKey(x => x.GuildId);
-            b.Property(x => x.GuildId).ValueGeneratedNever().HasColumnType("numeric(20,0)");
-            b.Property(x => x.Prefix).HasMaxLength(2);
-        });
-
         modelBuilder.Entity<QuorumScopeConfig>(b =>
         {
             b.HasKey(x => new
@@ -78,14 +61,6 @@ public sealed class BotDbContext : DbContext
 
             b.HasIndex(x => x.GuildId);
             b.HasIndex(x => new { x.GuildId, x.ScopeType });
-        });
-
-        modelBuilder.Entity<UserVirtue>(b =>
-        {
-            b.HasKey(x => x.UserId);
-
-            b.Property(x => x.UserId).ValueGeneratedNever().HasColumnType("numeric(20,0)");
-            b.Property(x => x.Virtue).HasColumnName("Score").HasColumnType("int");
         });
 
         modelBuilder.Entity<EmojiUsageCount>(b =>

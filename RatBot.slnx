@@ -12,11 +12,11 @@
         <File Path="docker/loki/config.yaml" />
         <File Path="docker/otel-collector/config.yaml" />
         <File Path="docker/grafana/provisioning/datasources/loki.yaml" />
-        <File Path="docker/observability.md" />
         <File Path="env/shared.env.example" />
         <File Path="env/production.env.example" />
         <File Path="env/staging.env.example" />
     </Folder>
+    <Folder Name="/ops/" />
     <Folder Name="/ops/cicd/">
         <File Path=".github/workflows/ci-format.yml" />
         <File Path=".github/workflows/build-image.yml" />
