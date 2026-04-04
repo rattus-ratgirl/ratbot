@@ -93,6 +93,12 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     protected async Task<bool> TryDeferEphemeralAsync() => await TryDeferAsync(ephemeral: true);
 
     /// <summary>
+    /// Defers the current interaction using a public acknowledgement.
+    /// </summary>
+    /// <returns><see langword="true"/> when the interaction was deferred or already acknowledged; otherwise, <see langword="false"/>.</returns>
+    protected async Task<bool> TryDeferPublicAsync() => await TryDeferAsync(ephemeral: false);
+
+    /// <summary>
     /// Sends an ephemeral message as either an initial response or a follow-up.
     /// </summary>
     /// <param name="text">The text to send.</param>
