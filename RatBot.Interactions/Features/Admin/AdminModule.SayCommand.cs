@@ -86,7 +86,7 @@ public sealed partial class AdminModule
     /// Handles submission of the admin say modal and posts the message to the queued destination channel.
     /// </summary>
     /// <param name="modal">The modal payload.</param>
-    [ModalInteraction(SayModalCustomId)]
+    [ModalInteraction(SayModalCustomId, ignoreGroupNames: true)]
     [RequireUserPermission(GuildPermission.Administrator)]
     public async Task SayModalAsync(AdminSayModal modal)
     {
