@@ -1,5 +1,3 @@
-
-
 // ReSharper disable UnusedType.Global
 
 namespace RatBot.Interactions.Features.Admin;
