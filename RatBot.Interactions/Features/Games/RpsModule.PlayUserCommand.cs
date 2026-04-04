@@ -43,23 +43,26 @@ public sealed partial class RpsModule
     /// </summary>
     /// <param name="opponent">The challenged user.</param>
     [UserCommand("Challenge to RPS")]
-    public async Task ChallengeAsync(SocketGuildUser opponent)
+    public async Task ChallengeAsync(IUser opponent)
     {
+        if (!await TryDeferPublicAsync())
+            return;
+
         if (Context.User.Id == opponent.Id)
         {
-            await RespondAsync("You cannot challenge yourself.", ephemeral: true);
+            await SendEphemeralAsync("You cannot challenge yourself.");
             return;
         }
 
         if (opponent.IsBot)
         {
-            await RespondAsync("You cannot challenge a bot.", ephemeral: true);
+            await SendEphemeralAsync("You cannot challenge a bot.");
             return;
         }
 
         if (Context.Channel is not ITextChannel)
         {
-            await RespondAsync("This command can only be used in a guild text channel.", ephemeral: true);
+            await SendEphemeralAsync("This command can only be used in a guild text channel.");
             return;
         }
 
@@ -74,7 +77,7 @@ public sealed partial class RpsModule
             .WithButton("Scissors", GetCustomId(gameId, RpsPick.Scissors))
             .Build();
 
-        await RespondAsync(
+        await FollowupAsync(
             $"{Context.User.Mention} challenged {opponent.Mention} to Rock-Paper-Scissors.\nBoth players choose using the buttons below.",
             components: buttons
         );
@@ -88,17 +91,20 @@ public sealed partial class RpsModule
     [ComponentInteraction($"{CustomIdPrefix}:*:*", ignoreGroupNames: true)]
     public async Task ChooseAsync(string gameId, string pickRaw)
     {
+        if (!await TryDeferEphemeralAsync())
+            return;
+
         PurgeExpiredGames();
 
         if (!Games.TryGetValue(gameId, out RpsGameState? state))
         {
-            await RespondAsync("That game is no longer active.", ephemeral: true);
+            await SendEphemeralAsync("That game is no longer active.");
             return;
         }
 
         if (!TryParsePick(pickRaw, out RpsPick pick))
         {
-            await RespondAsync("Invalid pick.", ephemeral: true);
+            await SendEphemeralAsync("Invalid pick.");
             return;
         }
 
@@ -107,14 +113,14 @@ public sealed partial class RpsModule
 
         if (!isChallenger && !isOpponent)
         {
-            await RespondAsync("You are not part of this game.", ephemeral: true);
+            await SendEphemeralAsync("You are not part of this game.");
             return;
         }
 
         state = isChallenger ? state with { ChallengerPick = pick } : state with { OpponentPick = pick };
         Games[gameId] = state;
 
-        await RespondAsync($"Locked in: **{pick}**.", ephemeral: true);
+        await SendEphemeralAsync($"Locked in: **{pick}**.");
 
         if (state.ChallengerPick is null || state.OpponentPick is null)
             return;
