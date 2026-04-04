@@ -164,8 +164,8 @@ cd "$REMOTE_DIR"
 if [[ -d .sync-tmp/docker ]]; then
   rm -rf docker
   mv .sync-tmp/docker ./docker
-  find docker -type d -exec chmod 0755 {} +
-  find docker -type f -exec chmod 0644 {} +
+  find docker -type d -exec chmod 2775 {} +
+  find docker -type f -exec chmod 0664 {} +
 fi
 
 mv .sync-tmp/compose.yaml ./compose.yaml
