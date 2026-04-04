@@ -74,19 +74,6 @@ partial class BotDbContextModelSnapshot : ModelSnapshot
             b.ToTable("QuorumScopeConfigs");
         });
 
-        modelBuilder.Entity("RatBot.Domain.Entities.UserVirtue", b =>
-        {
-            b.Property<ulong>("UserId")
-                .HasColumnType("numeric(20,0)");
-
-            b.Property<int>("Virtue")
-                .HasColumnType("integer")
-                .HasColumnName("Score");
-
-            b.HasKey("UserId");
-
-            b.ToTable("UserScores");
-        });
 #pragma warning restore 612, 618
     }
 }

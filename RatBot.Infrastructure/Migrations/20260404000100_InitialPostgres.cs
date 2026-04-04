@@ -31,7 +31,7 @@ public partial class InitialPostgres : Migration
             name: "GuildConfigs",
             columns: table => new
             {
-                GuildId = table.Column<ulong>(type: "numeric(20,0)", nullable: false),
+                GuildId = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
                 Prefix = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: false),
             },
             constraints: table =>
@@ -44,28 +44,15 @@ public partial class InitialPostgres : Migration
             name: "QuorumScopeConfigs",
             columns: table => new
             {
-                GuildId = table.Column<ulong>(type: "numeric(20,0)", nullable: false),
+                GuildId = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
                 ScopeType = table.Column<int>(type: "integer", nullable: false),
-                ScopeId = table.Column<ulong>(type: "numeric(20,0)", nullable: false),
+                ScopeId = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
                 RoleIds = table.Column<string>(type: "jsonb", nullable: false),
                 QuorumProportion = table.Column<double>(type: "double precision", precision: 6, scale: 4, nullable: false),
             },
             constraints: table =>
             {
                 table.PrimaryKey("PK_QuorumScopeConfigs", x => new { x.GuildId, x.ScopeType, x.ScopeId });
-            }
-        );
-
-        migrationBuilder.CreateTable(
-            name: "UserScores",
-            columns: table => new
-            {
-                UserId = table.Column<ulong>(type: "numeric(20,0)", nullable: false),
-                Score = table.Column<int>(type: "integer", nullable: false),
-            },
-            constraints: table =>
-            {
-                table.PrimaryKey("PK_UserScores", x => x.UserId);
             }
         );
 
@@ -84,6 +71,5 @@ public partial class InitialPostgres : Migration
         migrationBuilder.DropTable(name: "EmojiUsageCounts");
         migrationBuilder.DropTable(name: "GuildConfigs");
         migrationBuilder.DropTable(name: "QuorumScopeConfigs");
-        migrationBuilder.DropTable(name: "UserScores");
     }
 }

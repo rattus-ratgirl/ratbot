@@ -27,11 +27,6 @@ public sealed class BotDbContext : DbContext
     public DbSet<QuorumScopeConfig> QuorumScopeConfigs => Set<QuorumScopeConfig>();
 
     /// <summary>
-    /// Gets the user virtue set.
-    /// </summary>
-    public DbSet<UserVirtue> UserVirtues => Set<UserVirtue>();
-
-    /// <summary>
     /// Gets the emoji usage set.
     /// </summary>
     public DbSet<EmojiUsageCount> EmojiUsageCounts => Set<EmojiUsageCount>();
@@ -78,14 +73,6 @@ public sealed class BotDbContext : DbContext
 
             b.HasIndex(x => x.GuildId);
             b.HasIndex(x => new { x.GuildId, x.ScopeType });
-        });
-
-        modelBuilder.Entity<UserVirtue>(b =>
-        {
-            b.HasKey(x => x.UserId);
-
-            b.Property(x => x.UserId).ValueGeneratedNever().HasColumnType("numeric(20,0)");
-            b.Property(x => x.Virtue).HasColumnName("Score").HasColumnType("int");
         });
 
         modelBuilder.Entity<EmojiUsageCount>(b =>
