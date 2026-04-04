@@ -9,6 +9,7 @@ namespace RatBot.Interactions.Common.Discord;
 /// </summary>
 public abstract class SlashCommandBase : InteractionModuleBase<SocketInteractionContext>
 {
+    private const string DiagEventName = "interaction_diagnostics";
     private const string GuildOnlyMessage = "This command can only be used in a guild.";
     private const string UnexpectedErrorMessage = "An unexpected error occurred while handling that command.";
 
@@ -135,11 +136,8 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     private async Task<bool> TryDeferAsync(bool ephemeral)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        ILogger logger = Log
-            .ForContext("SourceContext", GetType().FullName)
-            .ForContext("InteractionId", Context.Interaction.Id)
-            .ForContext("InteractionType", Context.Interaction.Type.ToString())
-            .ForContext("InteractionAgeMsAtDeferStart", Math.Round(DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds, 2));
+        ILogger logger = CreateInteractionDiagnosticsLogger("interaction_ack");
+        double interactionAgeMs = Math.Round(DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds, 2);
         bool hasRespondedBefore = Context.Interaction.HasResponded;
 
         try
@@ -148,8 +146,11 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
                 await DeferAsync(ephemeral: ephemeral);
 
             logger.Information(
-                "interaction_timing defer_success. DeferMs={DeferMs} Ephemeral={Ephemeral} HasRespondedBefore={HasRespondedBefore} HasRespondedAfter={HasRespondedAfter}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} defer_ms={defer_ms} interaction_age_ms={interaction_age_ms} ephemeral={ephemeral} has_responded_before={has_responded_before} has_responded_after={has_responded_after}",
+                "defer",
+                "success",
                 Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
+                interactionAgeMs,
                 ephemeral,
                 hasRespondedBefore,
                 Context.Interaction.HasResponded
@@ -160,8 +161,11 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
         catch (TimeoutException)
         {
             logger.Warning(
-                "interaction_timing defer_timeout. DeferMs={DeferMs} Ephemeral={Ephemeral} HasRespondedBefore={HasRespondedBefore}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} defer_ms={defer_ms} interaction_age_ms={interaction_age_ms} ephemeral={ephemeral} has_responded_before={has_responded_before}",
+                "defer",
+                "timeout",
                 Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
+                interactionAgeMs,
                 ephemeral,
                 hasRespondedBefore
             );
@@ -170,8 +174,11 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
         catch (HttpException ex) when (ex.DiscordCode == (DiscordErrorCode)40060)
         {
             logger.Information(
-                "interaction_timing defer_already_acknowledged. DeferMs={DeferMs} Ephemeral={Ephemeral} DiscordCode={DiscordCode}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} defer_ms={defer_ms} interaction_age_ms={interaction_age_ms} ephemeral={ephemeral} discord_error_code={discord_error_code}",
+                "defer",
+                "already_acknowledged",
                 Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
+                interactionAgeMs,
                 ephemeral,
                 (int)ex.DiscordCode
             );
@@ -181,8 +188,11 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
         {
             logger.Warning(
                 ex,
-                "interaction_timing defer_unknown_interaction. DeferMs={DeferMs} Ephemeral={Ephemeral} DiscordCode={DiscordCode}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} defer_ms={defer_ms} interaction_age_ms={interaction_age_ms} ephemeral={ephemeral} discord_error_code={discord_error_code}",
+                "defer",
+                "unknown_interaction",
                 Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
+                interactionAgeMs,
                 ephemeral,
                 (int)ex.DiscordCode
             );
@@ -197,31 +207,106 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
 
     private async Task TrySendAsync(string content, bool ephemeral)
     {
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        ILogger logger = CreateInteractionDiagnosticsLogger("interaction_send");
+        double interactionAgeMs = Math.Round(DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds, 2);
+        bool hasRespondedBefore = Context.Interaction.HasResponded;
+
         try
         {
+            string sendMode;
             if (Context.Interaction.HasResponded)
+            {
                 await FollowupAsync(content, ephemeral: ephemeral);
+                sendMode = "followup";
+            }
             else
+            {
                 await RespondAsync(content, ephemeral: ephemeral);
+                sendMode = "respond";
+            }
+
+            logger.Information(
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} send_ms={send_ms} interaction_age_ms={interaction_age_ms} send_mode={send_mode} ephemeral={ephemeral} has_responded_before={has_responded_before} has_responded_after={has_responded_after}",
+                "send",
+                "success",
+                Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
+                interactionAgeMs,
+                sendMode,
+                ephemeral,
+                hasRespondedBefore,
+                Context.Interaction.HasResponded
+            );
         }
         catch (TimeoutException)
         {
-            // Interaction token already expired; cannot send a response.
+            logger.Warning(
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} send_ms={send_ms} interaction_age_ms={interaction_age_ms} ephemeral={ephemeral} has_responded_before={has_responded_before}",
+                "send",
+                "timeout",
+                Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
+                interactionAgeMs,
+                ephemeral,
+                hasRespondedBefore
+            );
         }
         catch (HttpException ex) when (ex.DiscordCode == (DiscordErrorCode)10062)
         {
-            // Interaction token already expired; cannot send a response.
+            logger.Warning(
+                ex,
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} send_ms={send_ms} interaction_age_ms={interaction_age_ms} ephemeral={ephemeral} discord_error_code={discord_error_code}",
+                "send",
+                "unknown_interaction",
+                Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
+                interactionAgeMs,
+                ephemeral,
+                (int)ex.DiscordCode
+            );
         }
         catch (HttpException ex) when (ex.DiscordCode == (DiscordErrorCode)40060)
         {
             try
             {
                 await FollowupAsync(content, ephemeral: ephemeral);
+
+                logger.Information(
+                    "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} send_ms={send_ms} interaction_age_ms={interaction_age_ms} send_mode={send_mode} ephemeral={ephemeral} discord_error_code={discord_error_code}",
+                    "send",
+                    "already_acknowledged_followup_success",
+                    Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
+                    interactionAgeMs,
+                    "followup",
+                    ephemeral,
+                    (int)ex.DiscordCode
+                );
             }
             catch (Exception)
             {
-                // The interaction has already been acknowledged and the follow-up also failed.
+                logger.Warning(
+                    "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} send_ms={send_ms} interaction_age_ms={interaction_age_ms} send_mode={send_mode} ephemeral={ephemeral} discord_error_code={discord_error_code}",
+                    "send",
+                    "already_acknowledged_followup_failed",
+                    Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2),
+                    interactionAgeMs,
+                    "followup",
+                    ephemeral,
+                    (int)ex.DiscordCode
+                );
             }
         }
+    }
+
+    private ILogger CreateInteractionDiagnosticsLogger(string diagComponent)
+    {
+        return Log
+            .ForContext("SourceContext", GetType().FullName)
+            .ForContext("diag_event", DiagEventName)
+            .ForContext("diag_component", diagComponent)
+            .ForContext("interaction_id", Context.Interaction.Id)
+            .ForContext("interaction_type", Context.Interaction.Type.ToString())
+            .ForContext("interaction_created_at_utc", Context.Interaction.CreatedAt.UtcDateTime.ToString("O"))
+            .ForContext("user_id", Context.User.Id)
+            .ForContext("guild_id", Context.Guild?.Id)
+            .ForContext("channel_id", Context.Channel?.Id);
     }
 }

@@ -4,6 +4,7 @@ namespace RatBot.Interactions.Features.Games;
 
 public sealed partial class RpsModule
 {
+    private const string DiagEventName = "interaction_diagnostics";
     private const string CustomIdPrefix = "rps";
 
     private static string GetCustomId(string gameId, RpsPick pick) => $"{CustomIdPrefix}:{gameId}:{pick.ToString().ToLowerInvariant()}";
@@ -49,13 +50,21 @@ public sealed partial class RpsModule
     {
         Stopwatch totalStopwatch = Stopwatch.StartNew();
         ILogger timingLogger = CreateTimingLogger("challenge");
-        timingLogger.Information("rps_timing challenge_start. HasRespondedAtEntry={HasRespondedAtEntry}", Context.Interaction.HasResponded);
+        timingLogger.Information(
+            "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms} has_responded={has_responded}",
+            "challenge_start",
+            "start",
+            0,
+            Context.Interaction.HasResponded
+        );
 
         Stopwatch deferStopwatch = Stopwatch.StartNew();
         if (!await TryDeferPublicAsync())
         {
             timingLogger.Warning(
-                "rps_timing challenge_defer_failed. DeferMs={DeferMs} TotalMs={TotalMs}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} defer_ms={defer_ms} total_ms={total_ms}",
+                "challenge_defer",
+                "failed",
                 Math.Round(deferStopwatch.Elapsed.TotalMilliseconds, 2),
                 Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
             );
@@ -63,7 +72,9 @@ public sealed partial class RpsModule
         }
 
         timingLogger.Information(
-            "rps_timing challenge_defer_succeeded. DeferMs={DeferMs} TotalMs={TotalMs}",
+            "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} defer_ms={defer_ms} total_ms={total_ms}",
+            "challenge_defer",
+            "succeeded",
             Math.Round(deferStopwatch.Elapsed.TotalMilliseconds, 2),
             Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
         );
@@ -71,14 +82,24 @@ public sealed partial class RpsModule
         if (Context.User.Id == opponent.Id)
         {
             await SendEphemeralAsync("You cannot challenge yourself.");
-            timingLogger.Information("rps_timing challenge_rejected_self. TotalMs={TotalMs}", Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2));
+            timingLogger.Information(
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms}",
+                "challenge_validate",
+                "rejected_self",
+                Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
+            );
             return;
         }
 
         if (opponent.IsBot)
         {
             await SendEphemeralAsync("You cannot challenge a bot.");
-            timingLogger.Information("rps_timing challenge_rejected_bot. TotalMs={TotalMs}", Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2));
+            timingLogger.Information(
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms}",
+                "challenge_validate",
+                "rejected_bot",
+                Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
+            );
             return;
         }
 
@@ -86,7 +107,9 @@ public sealed partial class RpsModule
         {
             await SendEphemeralAsync("This command can only be used in a guild text channel.");
             timingLogger.Information(
-                "rps_timing challenge_rejected_channel_type. TotalMs={TotalMs}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms}",
+                "challenge_validate",
+                "rejected_channel_type",
                 Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
             );
             return;
@@ -110,7 +133,9 @@ public sealed partial class RpsModule
         );
 
         timingLogger.Information(
-            "rps_timing challenge_followup_sent. FollowupMs={FollowupMs} TotalMs={TotalMs}",
+            "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} followup_ms={followup_ms} total_ms={total_ms}",
+            "challenge_followup",
+            "sent",
             Math.Round(followupStopwatch.Elapsed.TotalMilliseconds, 2),
             Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
         );
@@ -126,13 +151,21 @@ public sealed partial class RpsModule
     {
         Stopwatch totalStopwatch = Stopwatch.StartNew();
         ILogger timingLogger = CreateTimingLogger("choose");
-        timingLogger.Information("rps_timing choose_start. HasRespondedAtEntry={HasRespondedAtEntry}", Context.Interaction.HasResponded);
+        timingLogger.Information(
+            "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms} has_responded={has_responded}",
+            "choose_start",
+            "start",
+            0,
+            Context.Interaction.HasResponded
+        );
 
         Stopwatch deferStopwatch = Stopwatch.StartNew();
         if (!await TryDeferEphemeralAsync())
         {
             timingLogger.Warning(
-                "rps_timing choose_defer_failed. DeferMs={DeferMs} TotalMs={TotalMs}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} defer_ms={defer_ms} total_ms={total_ms}",
+                "choose_defer",
+                "failed",
                 Math.Round(deferStopwatch.Elapsed.TotalMilliseconds, 2),
                 Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
             );
@@ -140,7 +173,9 @@ public sealed partial class RpsModule
         }
 
         timingLogger.Information(
-            "rps_timing choose_defer_succeeded. DeferMs={DeferMs} TotalMs={TotalMs}",
+            "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} defer_ms={defer_ms} total_ms={total_ms}",
+            "choose_defer",
+            "succeeded",
             Math.Round(deferStopwatch.Elapsed.TotalMilliseconds, 2),
             Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
         );
@@ -150,14 +185,24 @@ public sealed partial class RpsModule
         if (!Games.TryGetValue(gameId, out RpsGameState? state))
         {
             await SendEphemeralAsync("That game is no longer active.");
-            timingLogger.Information("rps_timing choose_game_not_found. TotalMs={TotalMs}", Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2));
+            timingLogger.Information(
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms}",
+                "choose_validate",
+                "game_not_found",
+                Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
+            );
             return;
         }
 
         if (!TryParsePick(pickRaw, out RpsPick pick))
         {
             await SendEphemeralAsync("Invalid pick.");
-            timingLogger.Information("rps_timing choose_invalid_pick. TotalMs={TotalMs}", Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2));
+            timingLogger.Information(
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms}",
+                "choose_validate",
+                "invalid_pick",
+                Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
+            );
             return;
         }
 
@@ -168,7 +213,9 @@ public sealed partial class RpsModule
         {
             await SendEphemeralAsync("You are not part of this game.");
             timingLogger.Information(
-                "rps_timing choose_unauthorized_user. TotalMs={TotalMs}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms}",
+                "choose_validate",
+                "unauthorized_user",
                 Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
             );
             return;
@@ -180,7 +227,9 @@ public sealed partial class RpsModule
         await SendEphemeralAsync($"Locked in: **{pick}**.");
 
         timingLogger.Information(
-            "rps_timing choose_pick_recorded. TotalMs={TotalMs}",
+            "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms}",
+            "choose_record",
+            "pick_recorded",
             Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
         );
 
@@ -197,7 +246,9 @@ public sealed partial class RpsModule
         await FollowupAsync(summary);
 
         timingLogger.Information(
-            "rps_timing choose_result_sent. FollowupMs={FollowupMs} TotalMs={TotalMs}",
+            "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} followup_ms={followup_ms} total_ms={total_ms}",
+            "choose_result",
+            "sent",
             Math.Round(followupStopwatch.Elapsed.TotalMilliseconds, 2),
             Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
         );
@@ -206,12 +257,15 @@ public sealed partial class RpsModule
     private ILogger CreateTimingLogger(string operation)
     {
         return Log.ForContext<RpsModule>()
-            .ForContext("RpsOperation", operation)
-            .ForContext("InteractionId", Context.Interaction.Id)
-            .ForContext("InteractionType", Context.Interaction.Type.ToString())
-            .ForContext("InteractionAgeMsAtEntry", Math.Round(DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds, 2))
-            .ForContext("UserId", Context.User.Id)
-            .ForContext("GuildId", Context.Guild?.Id)
-            .ForContext("ChannelId", Context.Channel?.Id);
+            .ForContext("diag_event", DiagEventName)
+            .ForContext("diag_component", "rps_module")
+            .ForContext("rps_operation", operation)
+            .ForContext("interaction_id", Context.Interaction.Id)
+            .ForContext("interaction_type", Context.Interaction.Type.ToString())
+            .ForContext("interaction_age_ms", Math.Round(DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds, 2))
+            .ForContext("interaction_created_at_utc", Context.Interaction.CreatedAt.UtcDateTime.ToString("O"))
+            .ForContext("user_id", Context.User.Id)
+            .ForContext("guild_id", Context.Guild?.Id)
+            .ForContext("channel_id", Context.Channel?.Id);
     }
 }

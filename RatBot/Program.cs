@@ -32,11 +32,14 @@ public static class Program
             .UseSerilog(
                 (ctx, _, loggerConfiguration) =>
                 {
+                    string serviceInstanceId = ctx.Configuration["OTEL:Resource:ServiceInstanceId"] ?? Environment.MachineName;
+
                     loggerConfiguration
                         .MinimumLevel.Verbose()
                         .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                         .Enrich.FromLogContext()
                         .Enrich.WithProperty("service_name", ctx.Configuration["OTEL:Resource:ServiceName"] ?? "ratbot")
+                        .Enrich.WithProperty("service_instance_id", serviceInstanceId)
                         .Enrich.WithProperty(
                             "environment",
                             ctx.Configuration["OTEL:Resource:Environment"] ?? ctx.Configuration["ASPNETCORE_ENVIRONMENT"] ?? "production"
@@ -135,6 +138,7 @@ public static class Program
             return;
 
         string serviceName = config["OTEL:Resource:ServiceName"] ?? "ratbot";
+        string serviceInstanceId = config["OTEL:Resource:ServiceInstanceId"] ?? Environment.MachineName;
         string environment = config["OTEL:Resource:Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "production";
         string configuredProtocol = config["OTEL:Logs:Protocol"] ?? "grpc";
         OtlpProtocol protocol =
@@ -150,7 +154,9 @@ public static class Program
             options.ResourceAttributes = new Dictionary<string, object>
             {
                 ["service.name"] = serviceName,
+                ["service.instance.id"] = serviceInstanceId,
                 ["service_name"] = serviceName,
+                ["service_instance_id"] = serviceInstanceId,
                 ["environment"] = environment,
             };
         });
@@ -171,14 +177,16 @@ public static class Program
         }
 
         string serviceName = config["OTEL:Resource:ServiceName"] ?? "ratbot";
+        string serviceInstanceId = config["OTEL:Resource:ServiceInstanceId"] ?? Environment.MachineName;
         string environment = config["OTEL:Resource:Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "production";
         string protocol = config["OTEL:Logs:Protocol"] ?? "grpc";
 
         Log.Information(
-            "OpenTelemetry sink configured. Endpoint={OtelEndpoint} Protocol={OtelProtocol} ServiceName={ServiceName} Environment={Environment}",
+            "OpenTelemetry sink configured. Endpoint={OtelEndpoint} Protocol={OtelProtocol} ServiceName={ServiceName} ServiceInstanceId={ServiceInstanceId} Environment={Environment}",
             endpoint,
             protocol,
             serviceName,
+            serviceInstanceId,
             environment
         );
     }

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using Discord.Interactions;
+using Discord.Net;
 using Serilog.Events;
 using IResult = Discord.Interactions.IResult;
 
@@ -11,11 +12,14 @@ namespace RatBot.Discord;
 /// </summary>
 public sealed class DiscordBotService
 {
+    private const string DiagEventName = "interaction_diagnostics";
+
     private readonly DiscordSocketClient _discordClient;
     private readonly InteractionService _interactionService;
     private readonly IServiceProvider _services;
     private readonly IConfiguration _config;
     private readonly ILogger _logger;
+    private readonly string _serviceInstanceId;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DiscordBotService"/> class.
@@ -38,6 +42,7 @@ public sealed class DiscordBotService
         _services = services;
         _config = config;
         _logger = logger.ForContext<DiscordBotService>();
+        _serviceInstanceId = _config["OTEL:Resource:ServiceInstanceId"] ?? Environment.MachineName;
     }
 
     /// <summary>
@@ -140,22 +145,24 @@ public sealed class DiscordBotService
             return;
 
         Stopwatch totalStopwatch = Stopwatch.StartNew();
-        ILogger interactionLogger = _logger
-            .ForContext("InteractionId", interaction.Id)
-            .ForContext("InteractionType", interaction.Type.ToString())
-            .ForContext("InteractionName", GetInteractionName(interaction))
-            .ForContext("InteractionAgeMsAtReceive", GetInteractionAgeMs(interaction));
+        ILogger interactionLogger = CreateInteractionDiagnosticsLogger(interaction)
+            .ForContext("diag_component", "interaction_dispatch");
+        double interactionAgeMsAtReceive = GetInteractionAgeMs(interaction);
 
         try
         {
             IInteractionContext context = new SocketInteractionContext(_discordClient, interaction);
             interactionLogger = interactionLogger
-                .ForContext("UserId", context.User.Id)
-                .ForContext("GuildId", context.Guild?.Id)
-                .ForContext("ChannelId", context.Channel?.Id);
+                .ForContext("user_id", context.User.Id)
+                .ForContext("guild_id", context.Guild?.Id)
+                .ForContext("channel_id", context.Channel?.Id);
 
             interactionLogger.Information(
-                "interaction_timing received. HasRespondedAtReceive={HasRespondedAtReceive}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} interaction_age_ms={interaction_age_ms} total_ms={total_ms} has_responded={has_responded}",
+                "received",
+                "start",
+                interactionAgeMsAtReceive,
+                0,
                 interaction.HasResponded
             );
 
@@ -167,7 +174,9 @@ public sealed class DiscordBotService
             if (result.IsSuccess)
             {
                 interactionLogger.Information(
-                    "interaction_timing execute_success. ExecuteMs={ExecuteMs} TotalMs={TotalMs} HasRespondedAfterExecute={HasRespondedAfterExecute}",
+                    "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} execute_ms={execute_ms} total_ms={total_ms} has_responded={has_responded}",
+                    "execute",
+                    "success",
                     executeMs,
                     totalMs,
                     interaction.HasResponded
@@ -176,9 +185,11 @@ public sealed class DiscordBotService
             }
 
             interactionLogger.Warning(
-                "interaction_timing execute_failed. Error={Error} Reason={Reason} ExecuteMs={ExecuteMs} TotalMs={TotalMs} HasRespondedAfterExecute={HasRespondedAfterExecute}",
-                result.Error,
-                result.ErrorReason,
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} command_error={command_error} command_reason={command_reason} execute_ms={execute_ms} total_ms={total_ms} has_responded={has_responded}",
+                "execute",
+                "failed",
+                result.Error?.ToString() ?? "None",
+                result.ErrorReason ?? string.Empty,
                 executeMs,
                 totalMs,
                 interaction.HasResponded
@@ -193,16 +204,44 @@ public sealed class DiscordBotService
                 await interaction.FollowupAsync($"Command failed: {reason}", ephemeral: true);
 
             interactionLogger.Information(
-                "interaction_timing failure_response_sent. ResponseMs={ResponseMs} TotalMs={TotalMs}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} response_ms={response_ms} total_ms={total_ms}",
+                "failure_response",
+                "sent",
                 Math.Round(responseStopwatch.Elapsed.TotalMilliseconds, 2),
                 Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
+            );
+        }
+        catch (HttpException ex) when (ex.DiscordCode == (DiscordErrorCode)10062)
+        {
+            interactionLogger.Warning(
+                ex,
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} discord_error_code={discord_error_code} total_ms={total_ms} has_responded={has_responded}",
+                "dispatch",
+                "unknown_interaction",
+                (int)ex.DiscordCode,
+                Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2),
+                interaction.HasResponded
+            );
+        }
+        catch (HttpException ex) when (ex.DiscordCode == (DiscordErrorCode)40060)
+        {
+            interactionLogger.Information(
+                ex,
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} discord_error_code={discord_error_code} total_ms={total_ms} has_responded={has_responded}",
+                "dispatch",
+                "already_responded",
+                (int)ex.DiscordCode,
+                Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2),
+                interaction.HasResponded
             );
         }
         catch (Exception ex)
         {
             interactionLogger.Error(
                 ex,
-                "interaction_timing execute_exception. TotalMs={TotalMs} HasRespondedAtException={HasRespondedAtException}",
+                "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms} has_responded={has_responded}",
+                "dispatch",
+                "exception",
                 Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2),
                 interaction.HasResponded
             );
@@ -216,7 +255,9 @@ public sealed class DiscordBotService
                     await interaction.FollowupAsync("An error occurred executing that command.", ephemeral: true);
 
                 interactionLogger.Information(
-                    "interaction_timing exception_response_sent. ResponseMs={ResponseMs} TotalMs={TotalMs}",
+                    "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} response_ms={response_ms} total_ms={total_ms}",
+                    "exception_response",
+                    "sent",
                     Math.Round(responseStopwatch.Elapsed.TotalMilliseconds, 2),
                     Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
                 );
@@ -225,7 +266,9 @@ public sealed class DiscordBotService
             {
                 interactionLogger.Warning(
                     followupEx,
-                    "interaction_timing exception_response_failed. TotalMs={TotalMs}",
+                    "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} total_ms={total_ms}",
+                    "exception_response",
+                    "failed",
                     Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2)
                 );
             }
@@ -248,6 +291,18 @@ public sealed class DiscordBotService
             SocketModal modal => modal.Data.CustomId,
             _ => interaction.Type.ToString(),
         };
+    }
+
+    private ILogger CreateInteractionDiagnosticsLogger(SocketInteraction interaction)
+    {
+        return _logger
+            .ForContext("diag_event", DiagEventName)
+            .ForContext("service_instance_id", _serviceInstanceId)
+            .ForContext("process_id", Environment.ProcessId)
+            .ForContext("interaction_id", interaction.Id)
+            .ForContext("interaction_type", interaction.Type.ToString())
+            .ForContext("interaction_name", GetInteractionName(interaction))
+            .ForContext("interaction_created_at_utc", interaction.CreatedAt.UtcDateTime.ToString("O"));
     }
 
     private async Task HandleReactionAddedAsync(
