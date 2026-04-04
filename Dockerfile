@@ -16,6 +16,10 @@ RUN dotnet publish RatBot/RatBot.csproj -c Release -o /app/publish /p:UseAppHost
 FROM mcr.microsoft.com/dotnet/runtime:10.0
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish ./
 
 ENTRYPOINT ["dotnet", "RatBot.dll"]
