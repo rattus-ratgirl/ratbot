@@ -150,11 +150,11 @@ jobs:
         run: |
           {
             echo "### Deployment Plan"
-            echo "- Deploy: `${{ steps.resolve.outputs.deploy }}`"
-            echo "- Target: `${{ steps.resolve.outputs.target }}`"
-            echo "- Project: `${{ steps.resolve.outputs.project }}`"
-            echo "- Remote dir: `${{ steps.resolve.outputs.remote_dir }}`"
-            echo "- Image ref: `${{ steps.resolve.outputs.image_ref }}`"
+            echo '- Deploy: `${{ steps.resolve.outputs.deploy }}`'
+            echo '- Target: `${{ steps.resolve.outputs.target }}`'
+            echo '- Project: `${{ steps.resolve.outputs.project }}`'
+            echo '- Remote dir: `${{ steps.resolve.outputs.remote_dir }}`'
+            echo '- Image ref: `${{ steps.resolve.outputs.image_ref }}`'
             echo "- Reason: ${{ steps.resolve.outputs.reason }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -203,8 +203,8 @@ jobs:
         run: |
           {
             echo "### Deployment Result"
-            echo "- Target: `${{ needs.prepare.outputs.target }}`"
-            echo "- Project: `${{ needs.prepare.outputs.project }}`"
-            echo "- Remote dir: `${{ needs.prepare.outputs.remote_dir }}`"
-            echo "- Image ref: `${{ needs.prepare.outputs.image_ref }}`"
+            echo '- Target: `${{ needs.prepare.outputs.target }}`'
+            echo '- Project: `${{ needs.prepare.outputs.project }}`'
+            echo '- Remote dir: `${{ needs.prepare.outputs.remote_dir }}`'
+            echo '- Image ref: `${{ needs.prepare.outputs.image_ref }}`'
           } >> "$GITHUB_STEP_SUMMARY"
