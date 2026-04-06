@@ -2,19 +2,22 @@
 
 ## Workflows
 
+- `.github/workflows/ci-format.yml`
+  - Runs formatting, build, and tests
+  - Triggered on pull requests targeting `master` and pushes to `master`
+
 - `.github/workflows/build-image.yml`
   - Builds the bot container image from `Dockerfile`
   - Pushes to GHCR
-  - Triggered on push to `master` and `development`, plus manual dispatch
+  - Triggered on push to `master`, plus manual dispatch
   - Publishes tags:
     - immutable: `sha-<full_commit_sha>`
-    - branch: `master` / `development`
-    - moving aliases: `latest-production`, `latest-staging`
+    - branch: `master`
+    - moving aliases for staging candidates: `latest-staging`, `staging`
 
 - `.github/workflows/deploy-vps.yml`
   - Auto deploy mapping:
-    - `master` build completion -> deploy `production`
-    - `development` build completion -> deploy `staging`
+    - `master` build completion from a push event -> deploy `staging`
   - Manual dispatch supports:
     - `shared`
     - `production`
@@ -78,15 +81,19 @@ Use **Actions -> Deploy RatBot to VPS -> Run workflow**:
 
 - `target=shared`: deploy shared stack only
 - `target=production`: deploy production bot stack
+  - Requires `image_tag`
 - `target=staging`: deploy staging bot stack
-- Optional `image_tag` for production/staging:
-  - Tag only: `sha-<commit_sha>` or `latest-production` / `latest-staging`
+  - Defaults to `latest-staging` when `image_tag` is omitted
+- `image_tag` for production/staging:
+  - Tag only: `sha-<commit_sha>` or `latest-staging`
   - Or full image ref: `ghcr.io/<owner>/<repo>:sha-<commit_sha>`
 
-When `image_tag` is omitted:
+Recommended production flow:
 
-- production defaults to `latest-production`
-- staging defaults to `latest-staging`
+- Let `master` auto-deploy to staging using the immutable `sha-<commit_sha>` image
+- Promote that exact tested image to production manually by supplying the same `sha-<commit_sha>`
+
+For bot stacks, the deploy helper also writes the deployed `RATBOT_IMAGE` back to the server-side `.env` so later manual `docker compose` runs do not drift to an older moving tag.
 
 The deploy helper writes simple rollback state on the VPS per stack:
 

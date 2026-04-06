@@ -8,7 +8,6 @@ on:
       - completed
     branches:
       - master
-      - development
   workflow_dispatch:
     inputs:
       target:
@@ -20,7 +19,7 @@ on:
           - production
           - staging
       image_tag:
-        description: "Optional image tag or full image ref (only for production/staging). Defaults to latest-* tags."
+        description: "Image tag or full image ref. Required for production. Optional for staging."
         required: false
         type: string
 
@@ -45,6 +44,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion || '' }}
+          WORKFLOW_EVENT: ${{ github.event.workflow_run.event || '' }}
           WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch || '' }}
           WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha || '' }}
           WORKFLOW_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name || '' }}
@@ -66,24 +66,18 @@ jobs:
           if [[ "$EVENT_NAME" == "workflow_run" ]]; then
             if [[ "$WORKFLOW_CONCLUSION" != "success" ]]; then
               reason="Upstream build workflow did not succeed."
+            elif [[ "$WORKFLOW_EVENT" != "push" ]]; then
+              reason="Ignoring build workflow not triggered by a push event."
             elif [[ "$WORKFLOW_HEAD_REPO" != "$GITHUB_REPOSITORY" ]]; then
               reason="Ignoring workflow run from different repository."
             elif [[ "$WORKFLOW_HEAD_BRANCH" == "master" ]]; then
-              deploy="true"
-              target="production"
-              environment_name="production"
-              project="ratbot-production"
-              remote_dir="/opt/ratbot/production"
-              image_ref="${image_repo}:sha-${WORKFLOW_HEAD_SHA}"
-              reason="Auto deploy from master."
-            elif [[ "$WORKFLOW_HEAD_BRANCH" == "development" ]]; then
               deploy="true"
               target="staging"
               environment_name="staging"
               project="ratbot-staging"
               remote_dir="/opt/ratbot/staging"
               image_ref="${image_repo}:sha-${WORKFLOW_HEAD_SHA}"
-              reason="Auto deploy from development."
+              reason="Auto deploy staging from master."
             else
               reason="Branch is not mapped to auto deployment."
             fi
@@ -104,13 +98,18 @@ jobs:
                 project="ratbot-production"
                 remote_dir="/opt/ratbot/production"
 
-                tag="${INPUT_IMAGE_TAG:-latest-production}"
-                if [[ "$tag" == *"/"* ]]; then
-                  image_ref="$tag"
+                if [[ -z "$INPUT_IMAGE_TAG" ]]; then
+                  deploy="false"
+                  reason="Production deployment requires an explicit image_tag or full image ref."
+                elif [[ "$INPUT_IMAGE_TAG" == *"/"* ]]; then
+                  image_ref="$INPUT_IMAGE_TAG"
                 else
-                  image_ref="${image_repo}:${tag}"
+                  image_ref="${image_repo}:${INPUT_IMAGE_TAG}"
                 fi
-                reason="Manual production deployment."
+
+                if [[ "$deploy" == "true" ]]; then
+                  reason="Manual production deployment."
+                fi
                 ;;
               staging)
                 deploy="true"
