@@ -28,7 +28,7 @@ public sealed class DiscordBotHostedService : BackgroundService
     /// </summary>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task that completes when execution stops.</returns>
-    protected override async Task ExecuteAsync(CancellationToken ct)
+    protected async override Task ExecuteAsync(CancellationToken ct)
     {
         await _botService.StartAsync(ct);
         await Task.Delay(Timeout.Infinite, ct);

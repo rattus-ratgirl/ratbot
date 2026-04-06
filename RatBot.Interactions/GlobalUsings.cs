@@ -3,5 +3,6 @@
 global using Discord;
 global using Discord.Interactions;
 global using Discord.WebSocket;
+global using RatBot.Domain.Features.Quorum;
 global using RatBot.Interactions.Common.Discord;
 global using Serilog;
