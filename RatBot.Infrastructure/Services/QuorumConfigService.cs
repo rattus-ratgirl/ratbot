@@ -1,4 +1,3 @@
-using RatBot.Domain.Entities;
 using RatBot.Domain.Enums;
 using RatBot.Infrastructure.Data;
 
@@ -57,7 +56,7 @@ public sealed class QuorumConfigService
     /// <returns>A task that completes when changes are persisted.</returns>
     public Task CreateAsync(ulong guildId, QuorumScopeType scopeType, ulong scopeId, ulong roleId, double proportion)
     {
-        return CreateAsync(guildId, scopeType, scopeId, new[] { roleId }, proportion);
+        return CreateAsync(guildId, scopeType, scopeId, [roleId], proportion);
     }
 
     /// <summary>
@@ -92,7 +91,7 @@ public sealed class QuorumConfigService
     /// <returns><see langword="true"/> when an existing record was updated; otherwise, <see langword="false"/>.</returns>
     public Task<bool> UpdateAsync(ulong guildId, QuorumScopeType scopeType, ulong scopeId, ulong roleId, double proportion)
     {
-        return UpdateAsync(guildId, scopeType, scopeId, new[] { roleId }, proportion);
+        return UpdateAsync(guildId, scopeType, scopeId, [roleId], proportion);
     }
 
     /// <summary>

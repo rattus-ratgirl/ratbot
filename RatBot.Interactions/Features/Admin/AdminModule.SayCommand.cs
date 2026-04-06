@@ -1,9 +1,5 @@
 using System.Collections.Concurrent;
-using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
 using JetBrains.Annotations;
-using RatBot.Interactions.Common.Discord;
 
 namespace RatBot.Interactions.Features.Admin;
 

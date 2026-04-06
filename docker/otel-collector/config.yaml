@@ -19,15 +19,17 @@ processors:
       - context: log
         statements:
           - set(attributes["service_name"], resource.attributes["service.name"]) where attributes["service_name"] == nil
+          - set(attributes["service_instance_id"], resource.attributes["service.instance.id"]) where attributes["service_instance_id"] == nil
           - set(attributes["environment"], resource.attributes["environment"]) where attributes["environment"] == nil
           - set(attributes["service_name"], "ratbot-unknown") where attributes["service_name"] == nil
+          - set(attributes["service_instance_id"], "unknown") where attributes["service_instance_id"] == nil
           - set(attributes["environment"], "unknown") where attributes["environment"] == nil
           - set(attributes["level"], severity_text)
   attributes:
     actions:
       - action: insert
         key: loki.attribute.labels
-        value: service_name,environment,level
+        value: service_name,service_instance_id,environment,level,diag_event,diag_component,diag_stage,diag_outcome,interaction_type
   batch:
     timeout: 1s
     send_batch_size: 1024

@@ -1,7 +1,3 @@
-using Discord;
-using Discord.Interactions;
-using RatBot.Interactions.Common.Discord;
-
 // ReSharper disable UnusedType.Global
 
 namespace RatBot.Interactions.Features.Admin;

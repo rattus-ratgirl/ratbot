@@ -1,0 +1,17 @@
+
+[*]
+
+# Microsoft .NET properties
+csharp_preferred_modifier_order = public, private, protected, internal, file, new, async, abstract, virtual, static, readonly, override, extern, unsafe, volatile, sealed, required:suggestion
+
+# ReSharper properties
+resharper_blank_lines_after_multiline_statements = 1
+resharper_csharp_wrap_after_invocation_lpar = true
+resharper_csharp_wrap_arguments_style = chop_if_long
+resharper_csharp_wrap_before_invocation_rpar = true
+resharper_empty_string = string_empty
+resharper_instance_members_qualify_declared_in = this_class
+resharper_method_or_operator_body = expression_body
+resharper_place_expr_method_on_single_line = true
+resharper_place_expr_property_on_single_line = true
+resharper_place_simple_embedded_statement_on_same_line = false

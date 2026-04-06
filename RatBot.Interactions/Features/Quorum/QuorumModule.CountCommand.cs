@@ -1,6 +1,3 @@
-using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
 using RatBot.Domain.Entities;
 using RatBot.Domain.Enums;
 using RatBot.Interactions.Common.Responses;
