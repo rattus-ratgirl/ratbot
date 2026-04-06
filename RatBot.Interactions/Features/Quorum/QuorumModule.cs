@@ -9,11 +9,11 @@ namespace RatBot.Interactions.Features.Quorum;
 public sealed partial class QuorumModule : SlashCommandBase
 {
     private readonly ILogger _logger;
-    private readonly QuorumConfigService _quorumConfigService;
+    private readonly IConfigRepository _configRepository;
 
-    public QuorumModule(ILogger logger, QuorumConfigService quorumConfigService)
+    public QuorumModule(ILogger logger, IConfigRepository configRepository)
     {
         _logger = logger;
-        _quorumConfigService = quorumConfigService;
+        _configRepository = configRepository;
     }
 }
