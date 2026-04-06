@@ -46,7 +46,7 @@ public sealed partial class ConfigModule
         /// <param name="scopeId">The channel or category identifier.</param>
         /// <param name="roleIds">The comma-separated role identifiers used for quorum counting.</param>
         /// <param name="proportion">The quorum proportion in decimal form.</param>
-        [SlashCommand("set", "Create or update a quorum config for a channel or category. The scope ID must be a channel or category ID.")]
+        [SlashCommand("set", "Create or update a quorum config for a channel or category scope ID.")]
         [UsedImplicitly, RequireUserPermission(GuildPermission.Administrator)]
         public Task SetAsync(string scopeId, string roleIds, double proportion)
         {
