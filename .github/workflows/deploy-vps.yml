@@ -19,7 +19,7 @@ on:
           - production
           - staging
       image_tag:
-        description: "Image tag or full image ref. Required for production. Optional for staging."
+        description: "Image tag or full image ref (for example: sha-<commit>, <Docker build record ID>, or full ghcr ref). Required for production. Optional for staging."
         required: false
         type: string
 
