@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using RatBot.Domain.Enums;
-
 namespace RatBot.Domain.Entities;
 
 /// <summary>
@@ -9,7 +6,7 @@ namespace RatBot.Domain.Entities;
 [Table("QuorumScopeConfigs")]
 public sealed record QuorumScopeConfig
 {
-    private static readonly IReadOnlyList<ulong> EmptyRoleIds = Array.Empty<ulong>();
+    private static readonly IReadOnlyList<ulong> EmptyRoleIds = [];
 
     private QuorumScopeConfig() { }
 
@@ -25,7 +22,7 @@ public sealed record QuorumScopeConfig
 
     public static QuorumScopeConfig Create(ulong guildId, QuorumScopeType scopeType, ulong scopeId, ulong roleId, double quorumProportion)
     {
-        return Create(guildId, scopeType, scopeId, new[] { roleId }, quorumProportion);
+        return Create(guildId, scopeType, scopeId, [roleId], quorumProportion);
     }
 
     public static QuorumScopeConfig Create(
@@ -73,7 +70,7 @@ public sealed record QuorumScopeConfig
 
     public void Reconfigure(ulong roleId, double quorumProportion)
     {
-        Reconfigure(new[] { roleId }, quorumProportion);
+        Reconfigure([roleId], quorumProportion);
     }
 
     public void Reconfigure(IEnumerable<ulong> roleIds, double quorumProportion)

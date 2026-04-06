@@ -1,6 +1,4 @@
-using RatBot.Interactions.Common.Discord;
-using Serilog;
-
+// ReSharper disable UnusedType.Global
 namespace RatBot.Interactions.Features.Hello;
 
 /// <summary>

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using RatBot.Domain.Entities;
 
 namespace RatBot.Infrastructure.Data;
 

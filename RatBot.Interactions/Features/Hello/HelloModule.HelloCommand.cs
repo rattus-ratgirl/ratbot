@@ -1,6 +1,3 @@
-using Discord;
-using Discord.Interactions;
-
 namespace RatBot.Interactions.Features.Hello;
 
 public sealed partial class HelloModule

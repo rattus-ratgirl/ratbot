@@ -1,7 +1,4 @@
 using System.Text;
-using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
 using RatBot.Domain.Entities;
 
 namespace RatBot.Interactions.Features.Emoji;

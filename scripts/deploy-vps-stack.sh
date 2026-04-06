@@ -14,6 +14,7 @@ Usage:
 Behavior:
   - Syncs non-secret compose/config assets from the repository to the VPS
   - Leaves server-side .env files in place
+  - Persists the deployed RATBOT_IMAGE back to the server-side .env for bot stacks
   - Runs docker compose pull/up on the remote host
 EOF
 }
@@ -164,8 +165,8 @@ cd "$REMOTE_DIR"
 if [[ -d .sync-tmp/docker ]]; then
   rm -rf docker
   mv .sync-tmp/docker ./docker
-  find docker -type d -exec chmod 0755 {} +
-  find docker -type f -exec chmod 0644 {} +
+  find docker -type d -exec chmod 2775 {} +
+  find docker -type f -exec chmod 0664 {} +
 fi
 
 mv .sync-tmp/compose.yaml ./compose.yaml
@@ -197,6 +198,23 @@ docker compose "${compose_args[@]}" pull
 docker compose "${compose_args[@]}" up -d --remove-orphans
 
 if [[ -n "${IMAGE_REF}" ]]; then
+  tmp_env_file=".env.tmp"
+  awk -v image_ref="$IMAGE_REF" '
+    BEGIN { updated = 0 }
+    /^RATBOT_IMAGE=/ {
+      print "RATBOT_IMAGE=" image_ref
+      updated = 1
+      next
+    }
+    { print }
+    END {
+      if (!updated) {
+        print "RATBOT_IMAGE=" image_ref
+      }
+    }
+  ' .env > "$tmp_env_file"
+  mv "$tmp_env_file" .env
+
   state_dir=".deploy-state"
   mkdir -p "$state_dir"
 
