@@ -17,12 +17,12 @@ public sealed class QuorumScopeConfig
     /// <param name="roleIds">The role identifiers used for quorum counting.</param>
     /// <param name="quorumProportion">The quorum proportion.</param>
     [JsonConstructor]
-    public QuorumScopeConfig(ulong guildId, QuorumScopeType scopeType, ulong scopeId, IEnumerable<ulong> roleIds, double quorumProportion)
+    public QuorumScopeConfig(ulong guildId, QuorumScopeType scopeType, ulong scopeId, ulong[] roleIds, double quorumProportion)
     {
         GuildId = RequireDiscordId(guildId, nameof(guildId));
         ScopeType = RequireScopeType(scopeType);
         ScopeId = RequireDiscordId(scopeId, nameof(scopeId));
-        RoleIds = RequireRoleIds(roleIds);
+        RoleIds = RequireRoleIds(roleIds).ToArray();
         QuorumProportion = RequireQuorumProportion(quorumProportion);
     }
 
@@ -44,7 +44,7 @@ public sealed class QuorumScopeConfig
     /// <summary>
     /// Gets the role identifiers used for quorum counting.
     /// </summary>
-    public Arr<ulong> RoleIds { get; }
+    public ulong[] RoleIds { get; }
 
     /// <summary>
     /// Gets the quorum proportion.
@@ -83,7 +83,7 @@ public sealed class QuorumScopeConfig
         ulong scopeId,
         Arr<ulong> roleIds,
         double quorumProportion
-    ) => new QuorumScopeConfig(guildId, scopeType, scopeId, roleIds, quorumProportion);
+    ) => new QuorumScopeConfig(guildId, scopeType, scopeId, roleIds.ToArray(), quorumProportion);
 
     private static ulong RequireDiscordId(ulong value, string paramName) =>
         value == 0
@@ -138,5 +138,5 @@ public sealed class QuorumScopeConfig
     /// <param name="quorumProportion">The quorum proportion.</param>
     /// <returns>The replacement config.</returns>
     public QuorumScopeConfig Reconfigure(Arr<ulong> roleIds, double quorumProportion) =>
-        new QuorumScopeConfig(GuildId, ScopeType, ScopeId, roleIds, quorumProportion);
+        new QuorumScopeConfig(GuildId, ScopeType, ScopeId, roleIds.ToArray(), quorumProportion);
 }

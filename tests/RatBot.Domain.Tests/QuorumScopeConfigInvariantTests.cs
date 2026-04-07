@@ -2,6 +2,7 @@ using LanguageExt;
 using RatBot.Domain.Enums;
 using RatBot.Domain.Features.Quorum;
 using Shouldly;
+using System.Text.Json;
 
 namespace RatBot.Domain.Tests;
 
@@ -189,5 +190,27 @@ public sealed class QuorumScopeConfigInvariantTests
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() => _ = config.Reconfigure(RoleIds(), 0.5));
 
         ex.ParamName.ShouldBe("roleIds");
+    }
+
+    [Fact]
+    public void JsonRoundTrip_WithPersistedShape_DeserializesSuccessfully()
+    {
+        QuorumScopeConfig original = QuorumScopeConfig.Create(
+            guildId: 123,
+            scopeType: QuorumScopeType.Channel,
+            scopeId: 456,
+            roleIds: RoleIds(10UL, 20UL, 30UL),
+            quorumProportion: 0.75
+        );
+
+        string json = JsonSerializer.Serialize(original);
+        QuorumScopeConfig deserialized = JsonSerializer.Deserialize<QuorumScopeConfig>(json)
+            ?? throw new InvalidOperationException("Expected JSON payload to deserialize into QuorumScopeConfig.");
+
+        deserialized.GuildId.ShouldBe(original.GuildId);
+        deserialized.ScopeType.ShouldBe(original.ScopeType);
+        deserialized.ScopeId.ShouldBe(original.ScopeId);
+        deserialized.RoleIds.ShouldBe(original.RoleIds);
+        deserialized.QuorumProportion.ShouldBe(original.QuorumProportion);
     }
 }
