@@ -1,6 +1,7 @@
 <Solution>
     <Folder Name="/src/">
-        <Project Path="RatBot/RatBot.csproj" />
+        <Project Path="RatBot.Host/RatBot.Host.csproj" />
+        <Project Path="RatBot.Application/RatBot.Application.csproj" />
         <Project Path="RatBot.Interactions/RatBot.Interactions.csproj" />
         <Project Path="RatBot.Domain/RatBot.Domain.csproj" />
         <Project Path="RatBot.Infrastructure/RatBot.Infrastructure.csproj" />

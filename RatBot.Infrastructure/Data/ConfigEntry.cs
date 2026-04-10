@@ -1,17 +1,11 @@
 namespace RatBot.Infrastructure.Data;
 
 /// <summary>
-/// Represents a persisted bot configuration entry.
+/// Legacy migration-only config entry entity retained so historical EF migrations continue to compile.
 /// </summary>
 public sealed class ConfigEntry
 {
-    /// <summary>
-    /// Gets or sets the stable config key.
-    /// </summary>
     public required string Key { get; set; }
 
-    /// <summary>
-    /// Gets or sets the serialized config payload.
-    /// </summary>
     public required string Value { get; set; }
 }

@@ -9,11 +9,10 @@
         <PackageReference Include="Discord.Net.Interactions" />
         <PackageReference Include="Discord.Net.WebSocket" />
         <PackageReference Include="JetBrains.Annotations" />
-        <PackageReference Include="LanguageExt.Core" />
         <PackageReference Include="Serilog" />
     </ItemGroup>
     <ItemGroup>
+        <ProjectReference Include="..\RatBot.Application\RatBot.Application.csproj" />
         <ProjectReference Include="..\RatBot.Domain\RatBot.Domain.csproj" />
-        <ProjectReference Include="..\RatBot.Infrastructure\RatBot.Infrastructure.csproj" />
     </ItemGroup>
 </Project>

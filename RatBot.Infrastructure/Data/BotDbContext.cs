@@ -3,7 +3,7 @@ namespace RatBot.Infrastructure.Data;
 /// <summary>
 /// Entity Framework Core database context for RatBot persistence.
 /// </summary>
-public sealed class BotDbContext : DbContext
+public sealed class BotDbContext : DbContext, IBotDataContext
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="BotDbContext"/> class.
@@ -12,36 +12,52 @@ public sealed class BotDbContext : DbContext
     public BotDbContext(DbContextOptions<BotDbContext> options)
         : base(options) { }
 
-    /// <summary>
-    /// Gets the persisted config entry set.
-    /// </summary>
-    public DbSet<ConfigEntry> ConfigEntries => Set<ConfigEntry>();
-
-    /// <summary>
-    /// Gets the emoji usage set.
-    /// </summary>
     public DbSet<EmojiUsageCount> EmojiUsageCounts => Set<EmojiUsageCount>();
 
-    /// <summary>
-    /// Configures entity mappings.
-    /// </summary>
-    /// <param name="modelBuilder">The model builder instance.</param>
+    public DbSet<Configuration.Quorum.QuorumScopeConfigEntity> QuorumScopeConfigs =>
+        Set<Configuration.Quorum.QuorumScopeConfigEntity>();
+
+    public DbSet<Configuration.Quorum.QuorumScopeConfigRoleEntity> QuorumScopeConfigRoles =>
+        Set<Configuration.Quorum.QuorumScopeConfigRoleEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ConfigEntry>(b =>
-        {
-            b.ToTable("Configs");
-            b.HasKey(x => new { x.Key, x.Value });
-            b.Property(x => x.Key).HasColumnType("text");
-            b.Property(x => x.Value).HasColumnType("jsonb");
-        });
-
         modelBuilder.Entity<EmojiUsageCount>(b =>
         {
             b.HasKey(x => x.EmojiId);
 
             b.Property(x => x.EmojiId).HasMaxLength(128);
             b.Property(x => x.UsageCount).HasColumnType("int");
+        });
+
+        modelBuilder.Entity<Configuration.Quorum.QuorumScopeConfigEntity>(b =>
+        {
+            b.ToTable("QuorumScopeConfigs");
+            b.HasKey(x => new { x.GuildId, x.ScopeType, x.ScopeId });
+
+            b.Property(x => x.GuildId).HasColumnType("numeric(20,0)");
+            b.Property(x => x.ScopeType).HasColumnType("integer");
+            b.Property(x => x.ScopeId).HasColumnType("numeric(20,0)");
+            b.Property(x => x.QuorumProportion).HasColumnType("double precision").HasPrecision(6, 4);
+
+            b.HasIndex(x => x.GuildId);
+            b.HasIndex(x => new { x.GuildId, x.ScopeType });
+
+            b.HasMany(x => x.Roles)
+                .WithOne(x => x.Config)
+                .HasForeignKey(x => new { x.GuildId, x.ScopeType, x.ScopeId })
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Configuration.Quorum.QuorumScopeConfigRoleEntity>(b =>
+        {
+            b.ToTable("QuorumScopeConfigRoles");
+            b.HasKey(x => new { x.GuildId, x.ScopeType, x.ScopeId, x.RoleId });
+
+            b.Property(x => x.GuildId).HasColumnType("numeric(20,0)");
+            b.Property(x => x.ScopeType).HasColumnType("integer");
+            b.Property(x => x.ScopeId).HasColumnType("numeric(20,0)");
+            b.Property(x => x.RoleId).HasColumnType("numeric(20,0)");
         });
     }
 }
