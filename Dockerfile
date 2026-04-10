@@ -3,7 +3,7 @@ WORKDIR /src
 
 COPY Directory.Build.props ./
 COPY Directory.Packages.props ./
-COPY RatBot.Application/RatBot.Application.csproj Ratbot.Application/
+COPY RatBot.Application/RatBot.Application.csproj RatBot.Application/
 COPY RatBot.Host/RatBot.Host.csproj RatBot.Host/
 COPY RatBot.Infrastructure/RatBot.Infrastructure.csproj RatBot.Infrastructure/
 COPY RatBot.Interactions/RatBot.Interactions.csproj RatBot.Interactions/
@@ -23,4 +23,4 @@ RUN apt-get update \
 
 COPY --from=build /app/publish ./
 
-ENTRYPOINT ["dotnet", "RatBot.dll"]
+ENTRYPOINT ["dotnet", "RatBot.Host.dll"]
