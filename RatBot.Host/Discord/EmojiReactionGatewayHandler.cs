@@ -40,9 +40,7 @@ public sealed class EmojiReactionGatewayHandler(
             : reaction.Emote.Name;
 
         if (!buffer.Writer.TryWrite(emojiId))
-        {
             await buffer.Writer.WriteAsync(emojiId);
-        }
     }
 
     private Task HandleReactionRemovedAsync(
@@ -79,7 +77,9 @@ public sealed class EmojiReactionGatewayHandler(
 
     private void LogReactionEvent(string reactionEventType, IEmote emote)
     {
-        ulong? emojiId = emote is Emote customEmote ? customEmote.Id : null;
+        ulong? emojiId = emote is Emote customEmote
+            ? customEmote.Id
+            : null;
 
         _logger.ForContext("ReactionEventType", reactionEventType)
             .ForContext("EmojiName", emote.Name)

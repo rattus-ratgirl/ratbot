@@ -17,6 +17,7 @@ public abstract class GuildConfigurationModuleBase : SlashCommandBase
         }
 
         scope = Guild.Channels.FirstOrDefault(channel => channel.Id == parsedScopeId);
+
         if (scope is null)
         {
             errorMessage = "Invalid scope ID provided.";
@@ -33,7 +34,9 @@ public abstract class GuildConfigurationModuleBase : SlashCommandBase
 
         ulong[] parsedRoleIds = roleIds
             .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .Select(value => MentionParser.TryParse(value, out ulong parsedRoleId) ? parsedRoleId : 0)
+            .Select(value => MentionParser.TryParse(value, out ulong parsedRoleId)
+                ? parsedRoleId
+                : 0)
             .Where(value => value != 0)
             .Distinct()
             .ToArray();
@@ -45,6 +48,7 @@ public abstract class GuildConfigurationModuleBase : SlashCommandBase
         }
 
         roles = parsedRoleIds.Select(Guild.GetRole).Where(role => role is not null).ToArray()!;
+
         if (roles.Length != parsedRoleIds.Length)
         {
             errorMessage = "One or more role IDs are invalid for this guild.";

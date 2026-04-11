@@ -6,7 +6,7 @@ using Shouldly;
 namespace RatBot.Domain.Tests;
 
 /// <summary>
-/// Tests for the QuorumConfig domain model invariants.
+///     Tests for the QuorumConfig domain model invariants.
 /// </summary>
 public sealed class QuorumConfigInvariantTests
 {
@@ -16,11 +16,11 @@ public sealed class QuorumConfigInvariantTests
     public void Create_WithValidParameters_ReturnsInstance()
     {
         QuorumConfig config = QuorumConfig.Create(
-            guildId: 123,
-            targetType: QuorumConfigType.Channel,
-            targetId: 456,
-            roleIds: RoleIds(10UL, 20UL, 10UL, 30UL),
-            quorumProportion: 0.75);
+            123,
+            QuorumConfigType.Channel,
+            456,
+            RoleIds(10UL, 20UL, 10UL, 30UL),
+            0.75);
 
         config.GuildId.ShouldBe(123UL);
         config.TargetType.ShouldBe(QuorumConfigType.Channel);
@@ -32,12 +32,7 @@ public sealed class QuorumConfigInvariantTests
     [Fact]
     public void Create_SingleRoleOverload_SetsRoleAndProportion()
     {
-        QuorumConfig config = QuorumConfig.Create(
-            guildId: 123,
-            targetType: QuorumConfigType.Category,
-            targetId: 456,
-            roleId: 99,
-            quorumProportion: 0.6);
+        QuorumConfig config = QuorumConfig.Create(123, QuorumConfigType.Category, 456, 99, 0.6);
 
         config.RoleIds.ShouldBe(RoleIds(99UL));
         config.QuorumProportion.ShouldBe(0.6);
@@ -188,11 +183,11 @@ public sealed class QuorumConfigInvariantTests
     public void JsonRoundTrip_WithPersistedShape_DeserializesSuccessfully()
     {
         QuorumConfig original = QuorumConfig.Create(
-            guildId: 123,
-            targetType: QuorumConfigType.Channel,
-            targetId: 456,
-            roleIds: RoleIds(10UL, 20UL, 30UL),
-            quorumProportion: 0.75);
+            123,
+            QuorumConfigType.Channel,
+            456,
+            RoleIds(10UL, 20UL, 30UL),
+            0.75);
 
         string json = JsonSerializer.Serialize(original);
 

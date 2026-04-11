@@ -7,8 +7,8 @@ namespace RatBot.Host.Discord;
 public sealed class DiscordBotHostedService : IHostedService
 {
     private readonly DiscordSocketClient _discordClient;
-    private readonly DiscordInteractionHandler _interactionHandler;
     private readonly EmojiReactionGatewayHandler _emojiReactionHandler;
+    private readonly DiscordInteractionHandler _interactionHandler;
     private readonly ILogger _logger;
     private readonly DiscordOptions _options;
 
@@ -91,11 +91,20 @@ public sealed class DiscordBotHostedService : IHostedService
             _ => LogEventLevel.Debug
         };
 
-        string source = string.IsNullOrWhiteSpace(message.Source) ? "Unknown" : message.Source;
+        string source = string.IsNullOrWhiteSpace(message.Source)
+            ? "Unknown"
+            : message.Source;
 
         if (message.Exception is not null)
         {
-            _logger.Write(level, message.Exception, "[{Category}] {Source}: {Message}", category, source, message.Message);
+            _logger.Write(
+                level,
+                message.Exception,
+                "[{Category}] {Source}: {Message}",
+                category,
+                source,
+                message.Message);
+
             return;
         }
 

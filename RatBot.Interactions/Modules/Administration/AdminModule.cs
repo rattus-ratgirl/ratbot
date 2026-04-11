@@ -15,6 +15,7 @@ public sealed class AdminModule(AdminSayWorkflowService workflowService) : Slash
     {
         SocketGuild guild = Context.Guild!;
         ChannelPermissions botPermissions = guild.CurrentUser.GetPermissions(channel);
+
         if (!botPermissions.ViewChannel || !botPermissions.SendMessages)
         {
             await RespondAsync($"I don't have permission to post in {channel.Mention}.", ephemeral: true);
@@ -25,12 +26,13 @@ public sealed class AdminModule(AdminSayWorkflowService workflowService) : Slash
         await RespondWithModalAsync<AdminSayModal>($"{SayModalCustomIdPrefix}:{session.SessionId}");
     }
 
-    [ModalInteraction($"{SayModalCustomIdPrefix}:*", ignoreGroupNames: true)]
+    [ModalInteraction($"{SayModalCustomIdPrefix}:*", true)]
     [RequireUserPermission(GuildPermission.Administrator)]
     public async Task SayModalAsync(string sessionId, AdminSayModal modal)
     {
         SocketGuild guild = Context.Guild!;
         AdminSaySession? session = await workflowService.ConsumeSessionAsync(sessionId, guild.Id, Context.User.Id);
+
         if (session is null)
         {
             await RespondAsync("No pending destination channel was found. Run `/admin say` again.", ephemeral: true);
@@ -38,6 +40,7 @@ public sealed class AdminModule(AdminSayWorkflowService workflowService) : Slash
         }
 
         ITextChannel? channel = guild.GetTextChannel(session.ChannelId);
+
         if (channel is null)
         {
             await RespondAsync("I couldn't find that channel. Run `/admin say` again.", ephemeral: true);
@@ -45,6 +48,7 @@ public sealed class AdminModule(AdminSayWorkflowService workflowService) : Slash
         }
 
         ChannelPermissions botPermissions = guild.CurrentUser.GetPermissions(channel);
+
         if (!botPermissions.ViewChannel || !botPermissions.SendMessages)
         {
             await RespondAsync($"I don't have permission to post in {channel.Mention}.", ephemeral: true);
@@ -61,6 +65,7 @@ public sealed class AdminModule(AdminSayWorkflowService workflowService) : Slash
             return;
 
         IReadOnlyList<string> messageChunks = DiscordMessageChunker.SplitForMessageLimit(modal.Message);
+
         foreach (string chunk in messageChunks)
             await channel.SendMessageAsync(chunk);
 
@@ -74,14 +79,14 @@ public sealed class AdminModule(AdminSayWorkflowService workflowService) : Slash
     [UsedImplicitly]
     public sealed record AdminSayModal : IModal
     {
-        public string Title => "Send Message";
-
         [InputLabel("Message")]
         [ModalTextInput(
             "message",
             TextInputStyle.Paragraph,
-            placeholder: "Write the message exactly as it should be posted.",
+            "Write the message exactly as it should be posted.",
             maxLength: ModalMessageLimit)]
         public string Message { get; set; } = string.Empty;
+
+        public string Title => "Send Message";
     }
 }

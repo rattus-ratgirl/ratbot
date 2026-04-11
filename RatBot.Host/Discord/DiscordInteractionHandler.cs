@@ -4,6 +4,7 @@ using Discord.Interactions;
 using Discord.Net;
 using Microsoft.Extensions.Options;
 using RatBot.Host.Configuration;
+using RatBot.Interactions.Modules.General;
 using IResult = Discord.Interactions.IResult;
 
 namespace RatBot.Host.Discord;
@@ -17,17 +18,121 @@ public sealed class DiscordInteractionHandler(
     ILogger logger)
 {
     private const string DiagEventName = "interaction_diagnostics";
+    private readonly ILogger _logger = logger.ForContext<DiscordInteractionHandler>();
 
     private readonly DiscordOptions _options = options.Value;
-    private readonly ILogger _logger = logger.ForContext<DiscordInteractionHandler>();
-    private readonly string _serviceInstanceId = configuration["OTEL:Resource:ServiceInstanceId"] ?? Environment.MachineName;
+
+    private readonly string _serviceInstanceId =
+        configuration["OTEL:Resource:ServiceInstanceId"] ?? Environment.MachineName;
+
+    private static string GetInteractionName(SocketInteraction interaction) =>
+        interaction switch
+        {
+            SocketSlashCommand slashCommand => GetSlashCommandName(slashCommand),
+            SocketUserCommand userCommand => userCommand.Data.Name,
+            SocketMessageCommand messageCommand => messageCommand.Data.Name,
+            SocketMessageComponent component => component.Data.CustomId,
+            SocketModal modal => modal.Data.CustomId,
+            _ => interaction.Type.ToString()
+        };
+
+    private static string GetSlashCommandName(SocketSlashCommand command)
+    {
+        List<string> parts = [command.Data.Name];
+        IReadOnlyCollection<SocketSlashCommandDataOption> options = command.Data.Options;
+
+        while (true)
+        {
+            SocketSlashCommandDataOption? subCommandOption = options.FirstOrDefault(option =>
+                option.Type is ApplicationCommandOptionType.SubCommand or ApplicationCommandOptionType.SubCommandGroup);
+
+            if (subCommandOption is null)
+                return string.Join(" ", parts);
+
+            parts.Add(subCommandOption.Name);
+            options = subCommandOption.Options;
+        }
+    }
+
+    private static IEnumerable<SocketSlashCommandDataOption> EnumerateSlashOptions(
+        IReadOnlyCollection<SocketSlashCommandDataOption> options)
+    {
+        foreach (SocketSlashCommandDataOption option in options)
+        {
+            yield return option;
+
+            foreach (SocketSlashCommandDataOption nested in EnumerateSlashOptions(option.Options))
+                yield return nested;
+        }
+    }
+
+    private static CommandUsageDetails GetCommandUsageDetails(SocketInteraction interaction) =>
+        interaction switch
+        {
+            SocketSlashCommand slashCommand => GetSlashUsageDetails(slashCommand),
+            SocketUserCommand userCommand => GetUserContextUsageDetails(userCommand),
+            SocketMessageCommand messageCommand => GetMessageContextUsageDetails(messageCommand),
+            _ => new CommandUsageDetails(GetInteractionName(interaction), null, null, null)
+        };
+
+    private static CommandUsageDetails GetSlashUsageDetails(SocketSlashCommand slashCommand)
+    {
+        string commandName = GetSlashCommandName(slashCommand);
+
+        foreach (SocketSlashCommandDataOption option in EnumerateSlashOptions(slashCommand.Data.Options))
+        {
+            if (option.Type is not (ApplicationCommandOptionType.User or ApplicationCommandOptionType.Mentionable))
+                continue;
+
+            switch (option.Value)
+            {
+                case SocketGuildUser guildUser:
+                    return new CommandUsageDetails(
+                        commandName,
+                        guildUser.Id,
+                        guildUser.Username,
+                        $"slash_option:{option.Name}");
+                case SocketUser socketUser:
+                    return new CommandUsageDetails(
+                        commandName,
+                        socketUser.Id,
+                        socketUser.Username,
+                        $"slash_option:{option.Name}");
+                case IUser user:
+                    return new CommandUsageDetails(commandName, user.Id, user.Username, $"slash_option:{option.Name}");
+                case ulong userId:
+                    return new CommandUsageDetails(commandName, userId, null, $"slash_option:{option.Name}");
+            }
+        }
+
+        return new CommandUsageDetails(commandName, null, null, null);
+    }
+
+    private static CommandUsageDetails GetUserContextUsageDetails(SocketUserCommand userCommand)
+    {
+        IUser? invokee = userCommand.Data.Member ?? ((IUserCommandInteractionData)userCommand.Data).User;
+        return new CommandUsageDetails(userCommand.Data.Name, invokee?.Id, invokee?.Username, "user_context_target");
+    }
+
+    private static CommandUsageDetails GetMessageContextUsageDetails(SocketMessageCommand messageCommand)
+    {
+        IUser? invokee = messageCommand.Data.Message.Author;
+
+        return new CommandUsageDetails(
+            messageCommand.Data.Name,
+            invokee?.Id,
+            invokee?.Username,
+            "message_context_author");
+    }
 
     public async Task InitializeAsync(CancellationToken ct)
     {
-        Assembly interactionsAssembly = typeof(RatBot.Interactions.Modules.General.HelloModule).Assembly;
+        Assembly interactionsAssembly = typeof(HelloModule).Assembly;
         await interactionService.AddModulesAsync(interactionsAssembly, services);
 
-        _logger.Information("Registered {InteractionModuleCount} interaction modules.", interactionService.Modules.Count);
+        _logger.Information(
+            "Registered {InteractionModuleCount} interaction modules.",
+            interactionService.Modules.Count);
 
         discordClient.InteractionCreated += HandleInteractionAsync;
         discordClient.Ready += RegisterCommandsAsync;
@@ -43,7 +148,7 @@ public sealed class DiscordInteractionHandler(
     {
         try
         {
-            await interactionService.RegisterCommandsToGuildAsync(_options.GuildId, true);
+            await interactionService.RegisterCommandsToGuildAsync(_options.GuildId);
             _logger.Information("Slash commands registered to guild {GuildId}.", _options.GuildId);
         }
         catch (Exception ex)
@@ -54,18 +159,20 @@ public sealed class DiscordInteractionHandler(
 
     private async Task HandleInteractionAsync(SocketInteraction interaction)
     {
-        if (interaction.Type is not (InteractionType.ApplicationCommand or InteractionType.ModalSubmit or InteractionType.MessageComponent))
+        if (interaction.Type is not (InteractionType.ApplicationCommand or InteractionType.ModalSubmit
+            or InteractionType.MessageComponent))
             return;
 
         Stopwatch totalStopwatch = Stopwatch.StartNew();
-        ILogger interactionLogger = CreateInteractionDiagnosticsLogger(interaction).ForContext("diag_component", "interaction_dispatch");
+
+        ILogger interactionLogger = CreateInteractionDiagnosticsLogger(interaction)
+            .ForContext("diag_component", "interaction_dispatch");
 
         try
         {
             IInteractionContext context = new SocketInteractionContext(discordClient, interaction);
 
-            interactionLogger = interactionLogger
-                .ForContext("user_id", context.User.Id)
+            interactionLogger = interactionLogger.ForContext("user_id", context.User.Id)
                 .ForContext("guild_id", context.Guild?.Id)
                 .ForContext("channel_id", context.Channel?.Id);
 
@@ -73,6 +180,7 @@ public sealed class DiscordInteractionHandler(
                 LogCommandUsage(interactionLogger, context, interaction);
 
             IResult result = await interactionService.ExecuteCommandAsync(context, services);
+
             if (result.IsSuccess)
             {
                 interactionLogger.Information(
@@ -131,8 +239,7 @@ public sealed class DiscordInteractionHandler(
     {
         CommandUsageDetails usage = GetCommandUsageDetails(interaction);
 
-        interactionLogger
-            .ForContext("method_context", $"{nameof(DiscordInteractionHandler)}.{nameof(LogCommandUsage)}")
+        interactionLogger.ForContext("method_context", $"{nameof(DiscordInteractionHandler)}.{nameof(LogCommandUsage)}")
             .ForContext("command_name", usage.CommandName)
             .ForContext("invoker_user_id", context.User.Id)
             .ForContext("invokee_user_id", usage.InvokeeUserId)
@@ -149,92 +256,6 @@ public sealed class DiscordInteractionHandler(
             .ForContext("interaction_type", interaction.Type.ToString())
             .ForContext("interaction_name", GetInteractionName(interaction))
             .ForContext("interaction_created_at_utc", interaction.CreatedAt.UtcDateTime.ToString("O"));
-
-    private static string GetInteractionName(SocketInteraction interaction) =>
-        interaction switch
-        {
-            SocketSlashCommand slashCommand => GetSlashCommandName(slashCommand),
-            SocketUserCommand userCommand => userCommand.Data.Name,
-            SocketMessageCommand messageCommand => messageCommand.Data.Name,
-            SocketMessageComponent component => component.Data.CustomId,
-            SocketModal modal => modal.Data.CustomId,
-            _ => interaction.Type.ToString()
-        };
-
-    private static string GetSlashCommandName(SocketSlashCommand command)
-    {
-        List<string> parts = [command.Data.Name];
-        IReadOnlyCollection<SocketSlashCommandDataOption> options = command.Data.Options;
-
-        while (true)
-        {
-            SocketSlashCommandDataOption? subCommandOption = options.FirstOrDefault(option =>
-                option.Type is ApplicationCommandOptionType.SubCommand or ApplicationCommandOptionType.SubCommandGroup);
-
-            if (subCommandOption is null)
-                return string.Join(" ", parts);
-
-            parts.Add(subCommandOption.Name);
-            options = subCommandOption.Options;
-        }
-    }
-
-    private static IEnumerable<SocketSlashCommandDataOption> EnumerateSlashOptions(IReadOnlyCollection<SocketSlashCommandDataOption> options)
-    {
-        foreach (SocketSlashCommandDataOption option in options)
-        {
-            yield return option;
-
-            foreach (SocketSlashCommandDataOption nested in EnumerateSlashOptions(option.Options))
-                yield return nested;
-        }
-    }
-
-    private static CommandUsageDetails GetCommandUsageDetails(SocketInteraction interaction) =>
-        interaction switch
-        {
-            SocketSlashCommand slashCommand => GetSlashUsageDetails(slashCommand),
-            SocketUserCommand userCommand => GetUserContextUsageDetails(userCommand),
-            SocketMessageCommand messageCommand => GetMessageContextUsageDetails(messageCommand),
-            _ => new CommandUsageDetails(GetInteractionName(interaction), null, null, null)
-        };
-
-    private static CommandUsageDetails GetSlashUsageDetails(SocketSlashCommand slashCommand)
-    {
-        string commandName = GetSlashCommandName(slashCommand);
-
-        foreach (SocketSlashCommandDataOption option in EnumerateSlashOptions(slashCommand.Data.Options))
-        {
-            if (option.Type is not (ApplicationCommandOptionType.User or ApplicationCommandOptionType.Mentionable))
-                continue;
-
-            switch (option.Value)
-            {
-                case SocketGuildUser guildUser:
-                    return new CommandUsageDetails(commandName, guildUser.Id, guildUser.Username, $"slash_option:{option.Name}");
-                case SocketUser socketUser:
-                    return new CommandUsageDetails(commandName, socketUser.Id, socketUser.Username, $"slash_option:{option.Name}");
-                case IUser user:
-                    return new CommandUsageDetails(commandName, user.Id, user.Username, $"slash_option:{option.Name}");
-                case ulong userId:
-                    return new CommandUsageDetails(commandName, userId, null, $"slash_option:{option.Name}");
-            }
-        }
-
-        return new CommandUsageDetails(commandName, null, null, null);
-    }
-
-    private static CommandUsageDetails GetUserContextUsageDetails(SocketUserCommand userCommand)
-    {
-        IUser? invokee = userCommand.Data.Member ?? ((IUserCommandInteractionData)userCommand.Data).User;
-        return new CommandUsageDetails(userCommand.Data.Name, invokee?.Id, invokee?.Username, "user_context_target");
-    }
-
-    private static CommandUsageDetails GetMessageContextUsageDetails(SocketMessageCommand messageCommand)
-    {
-        IUser? invokee = messageCommand.Data.Message.Author;
-        return new CommandUsageDetails(messageCommand.Data.Name, invokee?.Id, invokee?.Username, "message_context_author");
-    }
 
     private readonly record struct CommandUsageDetails(
         string CommandName,

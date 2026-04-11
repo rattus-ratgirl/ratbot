@@ -18,6 +18,7 @@ public sealed class RpsGameService(IRpsGameRepository repository, ILogger logger
             throw new ArgumentException("Challenger and opponent must be different users.", nameof(opponentId));
 
         DateTimeOffset createdAt = DateTimeOffset.UtcNow;
+
         RpsGameSession game = new RpsGameSession(
             Guid.NewGuid().ToString("N"),
             challengerId,

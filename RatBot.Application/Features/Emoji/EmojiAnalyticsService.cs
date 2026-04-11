@@ -14,14 +14,11 @@ public sealed class EmojiAnalyticsService(IBotDataContext dbContext, ILogger log
 
     public async Task RecordBatchUsageAsync(IEnumerable<string> emojiIds, CancellationToken ct = default)
     {
-        Dictionary<string, int> counts = emojiIds
-            .GroupBy(x => x)
-            .ToDictionary(g => g.Key, g => g.Count());
+        Dictionary<string, int> counts = emojiIds.GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count());
 
         foreach ((string emojiId, int count) in counts)
         {
-            int updatedRowCount = await dbContext.EmojiUsageCounts
-                .Where(x => x.EmojiId == emojiId)
+            int updatedRowCount = await dbContext.EmojiUsageCounts.Where(x => x.EmojiId == emojiId)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.UsageCount, x => x.UsageCount + count), ct);
 
             if (updatedRowCount == 0)
@@ -36,9 +33,10 @@ public sealed class EmojiAnalyticsService(IBotDataContext dbContext, ILogger log
                 {
                     dbContext.ChangeTracker.Clear();
 
-                    updatedRowCount = await dbContext.EmojiUsageCounts
-                        .Where(x => x.EmojiId == emojiId)
-                        .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.UsageCount, x => x.UsageCount + count), ct);
+                    updatedRowCount = await dbContext.EmojiUsageCounts.Where(x => x.EmojiId == emojiId)
+                        .ExecuteUpdateAsync(
+                            setters => setters.SetProperty(x => x.UsageCount, x => x.UsageCount + count),
+                            ct);
 
                     if (updatedRowCount == 0)
                         throw;
@@ -53,8 +51,7 @@ public sealed class EmojiAnalyticsService(IBotDataContext dbContext, ILogger log
     {
         int clampedLimit = Math.Clamp(limit, 1, 100);
 
-        return dbContext.EmojiUsageCounts
-            .AsNoTracking()
+        return dbContext.EmojiUsageCounts.AsNoTracking()
             .OrderByDescending(x => x.UsageCount)
             .ThenBy(x => x.EmojiId)
             .Take(clampedLimit)

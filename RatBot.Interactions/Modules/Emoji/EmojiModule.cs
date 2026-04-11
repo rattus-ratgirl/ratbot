@@ -10,11 +10,12 @@ public sealed class EmojiModule(EmojiAnalyticsService emojiAnalyticsService, Dis
     : SlashCommandBase
 {
     [SlashCommand("usage", "Show the top 25 emojis by usage.")]
-    public Task UsageAsync() => ReplyAsync(GetUsageResponseAsync, defer: true);
+    public Task UsageAsync() => ReplyAsync(GetUsageResponseAsync, true);
 
     private async Task<string> GetUsageResponseAsync()
     {
-        List<EmojiUsageCount> topUsage = await emojiAnalyticsService.GetTopUsageAsync(25);
+        List<EmojiUsageCount> topUsage = await emojiAnalyticsService.GetTopUsageAsync();
+
         if (topUsage.Count == 0)
             return "No emoji usage has been recorded yet.";
 
@@ -37,6 +38,7 @@ public sealed class EmojiModule(EmojiAnalyticsService emojiAnalyticsService, Dis
         foreach (SocketGuild guild in discordClient.Guilds)
         {
             GuildEmote? guildEmote = guild.Emotes.FirstOrDefault(x => x.Id == parsedEmojiId);
+
             if (guildEmote is not null)
                 return guildEmote.ToString();
         }

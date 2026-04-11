@@ -5,7 +5,7 @@ namespace RatBot.Host;
 
 public static class Program
 {
-    public static async Task Main(string[] args)
+    public async static Task Main(string[] args)
     {
         Env.TraversePath().Load();
         EnableSerilogSelfDiagnostics();
@@ -25,21 +25,39 @@ public static class Program
     {
         string serviceInstanceId = config["OTEL:Resource:ServiceInstanceId"] ?? Environment.MachineName;
 
-        loggerConfiguration
-            .MinimumLevel.Verbose()
+        loggerConfiguration.MinimumLevel.Verbose()
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .Enrich.FromLogContext()
             .Enrich.WithProperty("service_name", config["OTEL:Resource:ServiceName"] ?? "ratbot")
             .Enrich.WithProperty("service_instance_id", serviceInstanceId)
-            .Enrich.WithProperty(
+            .Enrich
+            .WithProperty(
                 "environment",
                 config["OTEL:Resource:Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "production")
-            .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
-            .WriteTo.File("logs/verbose-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Verbose)
-            .WriteTo.File("logs/debug-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Debug)
-            .WriteTo.File("logs/info-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Information)
-            .WriteTo.File("logs/warning-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Warning)
-            .WriteTo.File("logs/error-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Error);
+            .WriteTo.Console(LogEventLevel.Information)
+            .WriteTo
+            .File(
+                "logs/verbose-.log",
+                rollingInterval: RollingInterval.Day,
+                restrictedToMinimumLevel: LogEventLevel.Verbose)
+            .WriteTo
+            .File(
+                "logs/debug-.log",
+                rollingInterval: RollingInterval.Day,
+                restrictedToMinimumLevel: LogEventLevel.Debug)
+            .WriteTo
+            .File(
+                "logs/info-.log",
+                rollingInterval: RollingInterval.Day,
+                restrictedToMinimumLevel: LogEventLevel.Information)
+            .WriteTo.File(
+                "logs/warning-.log",
+                rollingInterval: RollingInterval.Day,
+                restrictedToMinimumLevel: LogEventLevel.Warning)
+            .WriteTo.File(
+                "logs/error-.log",
+                rollingInterval: RollingInterval.Day,
+                restrictedToMinimumLevel: LogEventLevel.Error);
 
         ConfigureOpenTelemetryLogs(config, loggerConfiguration);
     }
@@ -47,6 +65,7 @@ public static class Program
     private static void ConfigureOpenTelemetryLogs(IConfiguration config, LoggerConfiguration loggerConfiguration)
     {
         string? endpoint = config["OTEL:Logs:Endpoint"];
+
         if (string.IsNullOrWhiteSpace(endpoint))
             return;
 
@@ -54,8 +73,9 @@ public static class Program
         string serviceInstanceId = config["OTEL:Resource:ServiceInstanceId"] ?? Environment.MachineName;
         string environment = config["OTEL:Resource:Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "production";
         string configuredProtocol = config["OTEL:Logs:Protocol"] ?? "grpc";
-        OtlpProtocol protocol = configuredProtocol.Equals("http", StringComparison.OrdinalIgnoreCase)
-                                || configuredProtocol.Equals("http/protobuf", StringComparison.OrdinalIgnoreCase)
+
+        OtlpProtocol protocol = configuredProtocol.Equals("http", StringComparison.OrdinalIgnoreCase) ||
+                                configuredProtocol.Equals("http/protobuf", StringComparison.OrdinalIgnoreCase)
             ? OtlpProtocol.HttpProtobuf
             : OtlpProtocol.Grpc;
 
@@ -63,6 +83,7 @@ public static class Program
         {
             options.Endpoint = endpoint;
             options.Protocol = protocol;
+
             options.ResourceAttributes = new Dictionary<string, object>
             {
                 ["service.name"] = serviceName,
@@ -74,11 +95,13 @@ public static class Program
         });
     }
 
-    private static void EnableSerilogSelfDiagnostics() => SelfLog.Enable(message => Console.Error.WriteLine($"[SerilogSelfLog] {message}"));
+    private static void EnableSerilogSelfDiagnostics() =>
+        SelfLog.Enable(message => Console.Error.WriteLine($"[SerilogSelfLog] {message}"));
 
     private static void LogOpenTelemetryStartupConfiguration(IConfiguration config)
     {
         string? endpoint = config["OTEL:Logs:Endpoint"];
+
         if (string.IsNullOrWhiteSpace(endpoint))
         {
             Log.Warning("OpenTelemetry sink is disabled because OTEL:Logs:Endpoint is not configured.");

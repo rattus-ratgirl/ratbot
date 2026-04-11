@@ -1,4 +1,5 @@
 using Discord.Interactions;
+using Microsoft.Extensions.Options;
 using RatBot.Application;
 using RatBot.Host.Configuration;
 using RatBot.Host.Discord;
@@ -19,23 +20,21 @@ public static class DependencyInjection
 
         services.AddSingleton(sp =>
         {
-            DiscordOptions options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DiscordOptions>>().Value;
+            DiscordOptions options = sp.GetRequiredService<IOptions<DiscordOptions>>().Value;
 
-            return new DiscordSocketClient(new DiscordSocketConfig
-            {
-                MessageCacheSize = options.MessageCacheSize,
-                GatewayIntents = GatewayIntents.Guilds
-                                 | GatewayIntents.GuildMembers
-                                 | GatewayIntents.GuildMessages
-                                 | GatewayIntents.GuildMessageReactions
-                                 | GatewayIntents.MessageContent
-            });
+            return new DiscordSocketClient(
+                new DiscordSocketConfig
+                {
+                    MessageCacheSize = options.MessageCacheSize,
+                    GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers |
+                                     GatewayIntents.GuildMessages | GatewayIntents.GuildMessageReactions |
+                                     GatewayIntents.MessageContent
+                });
         });
 
-        services.AddSingleton(sp =>
-            new InteractionService(
-                sp.GetRequiredService<DiscordSocketClient>(),
-                new InteractionServiceConfig { AutoServiceScopes = true }));
+        services.AddSingleton(sp => new InteractionService(
+            sp.GetRequiredService<DiscordSocketClient>(),
+            new InteractionServiceConfig { AutoServiceScopes = true }));
 
         services.AddSingleton<DiscordInteractionHandler>();
         services.AddSingleton<EmojiReactionGatewayHandler>();

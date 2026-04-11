@@ -8,6 +8,37 @@ public sealed class RpsModule(RpsGameService rpsGameService) : SlashCommandBase
     private const string DiagEventName = "interaction_diagnostics";
     private const string CustomIdPrefix = "rps";
 
+    private static string GetCustomId(string gameId, RpsPick pick) =>
+        $"{CustomIdPrefix}:{gameId}:{pick.ToString().ToLowerInvariant()}";
+
+    private static bool TryParsePick(string value, out RpsPick pick)
+    {
+        switch (value.ToLowerInvariant())
+        {
+            case "rock":
+                pick = RpsPick.Rock;
+                return true;
+            case "paper":
+                pick = RpsPick.Paper;
+                return true;
+            case "scissors":
+                pick = RpsPick.Scissors;
+                return true;
+            default:
+                pick = default;
+                return false;
+        }
+    }
+
+    private static string GetResultText(RpsGameOutcome outcome) =>
+        outcome switch
+        {
+            RpsGameOutcome.Tie => "It's a tie.",
+            RpsGameOutcome.ChallengerWon => "Challenger wins.",
+            RpsGameOutcome.OpponentWon => "Opponent wins.",
+            _ => "Game complete."
+        };
+
     [UserCommand("Challenge to RPS")]
     public async Task ChallengeAsync(IUser opponent)
     {
@@ -43,8 +74,7 @@ public sealed class RpsModule(RpsGameService rpsGameService) : SlashCommandBase
 
         RpsGameSession game = await rpsGameService.CreateGameAsync(Context.User.Id, opponent.Id);
 
-        MessageComponent buttons = new ComponentBuilder()
-            .WithButton("Rock", GetCustomId(game.GameId, RpsPick.Rock))
+        MessageComponent buttons = new ComponentBuilder().WithButton("Rock", GetCustomId(game.GameId, RpsPick.Rock))
             .WithButton("Paper", GetCustomId(game.GameId, RpsPick.Paper))
             .WithButton("Scissors", GetCustomId(game.GameId, RpsPick.Scissors))
             .Build();
@@ -54,7 +84,7 @@ public sealed class RpsModule(RpsGameService rpsGameService) : SlashCommandBase
             components: buttons);
     }
 
-    [ComponentInteraction($"{CustomIdPrefix}:*:*", ignoreGroupNames: true)]
+    [ComponentInteraction($"{CustomIdPrefix}:*:*", true)]
     public async Task ChooseAsync(string gameId, string pickRaw)
     {
         ILogger timingLogger = CreateTimingLogger("choose");
@@ -94,47 +124,22 @@ public sealed class RpsModule(RpsGameService rpsGameService) : SlashCommandBase
         if (result.Status == RpsPickSubmissionStatus.PickRecorded)
             return;
 
-        RpsGameSession completedGame = result.Game ?? throw new InvalidOperationException("Completed RPS result missing game.");
-        RpsGameOutcome outcome = result.Outcome ?? throw new InvalidOperationException("Completed RPS result missing outcome.");
+        RpsGameSession completedGame =
+            result.Game ?? throw new InvalidOperationException("Completed RPS result missing game.");
+
+        RpsGameOutcome outcome =
+            result.Outcome ?? throw new InvalidOperationException("Completed RPS result missing outcome.");
 
         await FollowupAsync(
             $"Game complete: <@{completedGame.ChallengerId}> picked **{completedGame.ChallengerPick}**, <@{completedGame.OpponentId}> picked **{completedGame.OpponentPick}**.\n{GetResultText(outcome)}");
     }
-
-    private static string GetCustomId(string gameId, RpsPick pick) => $"{CustomIdPrefix}:{gameId}:{pick.ToString().ToLowerInvariant()}";
-
-    private static bool TryParsePick(string value, out RpsPick pick)
-    {
-        switch (value.ToLowerInvariant())
-        {
-            case "rock":
-                pick = RpsPick.Rock;
-                return true;
-            case "paper":
-                pick = RpsPick.Paper;
-                return true;
-            case "scissors":
-                pick = RpsPick.Scissors;
-                return true;
-            default:
-                pick = default;
-                return false;
-        }
-    }
-
-    private static string GetResultText(RpsGameOutcome outcome) =>
-        outcome switch
-        {
-            RpsGameOutcome.Tie => "It's a tie.",
-            RpsGameOutcome.ChallengerWon => "Challenger wins.",
-            RpsGameOutcome.OpponentWon => "Opponent wins.",
-            _ => "Game complete."
-        };
 
     private ILogger CreateTimingLogger(string operation) =>
         CreateMethodLogger(nameof(CreateTimingLogger))
             .ForContext("diag_event", DiagEventName)
             .ForContext("diag_component", "rps_module")
             .ForContext("rps_operation", operation)
-            .ForContext("interaction_age_ms", Math.Round(DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds, 2));
+            .ForContext(
+                "interaction_age_ms",
+                Math.Round(DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds, 2));
 }

@@ -10,9 +10,5 @@ public interface IQuorumConfigurationRepository
 
     Task<bool> UpsertAsync(QuorumConfig config, CancellationToken ct = default);
 
-    Task<bool> DeleteAsync(
-        ulong guildId,
-        QuorumConfigType targetType,
-        ulong targetId,
-        CancellationToken ct = default);
+    Task<bool> DeleteAsync(ulong guildId, QuorumConfigType targetType, ulong targetId, CancellationToken ct = default);
 }

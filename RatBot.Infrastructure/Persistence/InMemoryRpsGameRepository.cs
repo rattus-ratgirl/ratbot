@@ -37,7 +37,8 @@ public sealed class InMemoryRpsGameRepository : IRpsGameRepository
             bool isOpponent = userId == game.OpponentId;
 
             if (!isChallenger && !isOpponent)
-                return Task.FromResult(new RpsPickSubmissionResult(RpsPickSubmissionStatus.UnauthorizedUser, game, null));
+                return Task.FromResult(
+                    new RpsPickSubmissionResult(RpsPickSubmissionStatus.UnauthorizedUser, game, null));
 
             RpsGameSession updatedGame = isChallenger
                 ? game with { ChallengerPick = pick }
@@ -47,7 +48,8 @@ public sealed class InMemoryRpsGameRepository : IRpsGameRepository
                 continue;
 
             if (updatedGame.ChallengerPick is null || updatedGame.OpponentPick is null)
-                return Task.FromResult(new RpsPickSubmissionResult(RpsPickSubmissionStatus.PickRecorded, updatedGame, null));
+                return Task.FromResult(
+                    new RpsPickSubmissionResult(RpsPickSubmissionStatus.PickRecorded, updatedGame, null));
 
             _games.TryRemove(gameId, out _);
 
@@ -55,7 +57,8 @@ public sealed class InMemoryRpsGameRepository : IRpsGameRepository
                 updatedGame.ChallengerPick.Value,
                 updatedGame.OpponentPick.Value);
 
-            return Task.FromResult(new RpsPickSubmissionResult(RpsPickSubmissionStatus.GameCompleted, updatedGame, outcome));
+            return Task.FromResult(
+                new RpsPickSubmissionResult(RpsPickSubmissionStatus.GameCompleted, updatedGame, outcome));
         }
     }
 }

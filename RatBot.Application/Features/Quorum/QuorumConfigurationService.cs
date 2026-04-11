@@ -15,18 +15,21 @@ public sealed class QuorumConfigurationService(IQuorumConfigurationRepository re
         ArgumentOutOfRangeException.ThrowIfZero(guildId);
         ArgumentOutOfRangeException.ThrowIfZero(targetId);
         ArgumentNullException.ThrowIfNull(roleIds);
-        
+
         QuorumConfig config = new QuorumConfig(
             guildId,
             targetType,
             targetId,
             roleIds.Distinct().ToArray(),
             quorumProportion);
+
         bool created = await repository.UpsertAsync(config, ct);
 
         _logger.Information(
             "Quorum configuration {Action} for guild {GuildId}, target type {TargetType}, target {TargetId}.",
-            created ? "created" : "updated",
+            created
+                ? "created"
+                : "updated",
             guildId,
             targetType,
             targetId);
@@ -59,6 +62,7 @@ public sealed class QuorumConfigurationService(IQuorumConfigurationRepository re
         CancellationToken ct = default)
     {
         QuorumConfig? channelConfig = await repository.GetAsync(guildId, QuorumConfigType.Channel, channelId, ct);
+
         if (channelConfig is not null)
             return channelConfig;
 

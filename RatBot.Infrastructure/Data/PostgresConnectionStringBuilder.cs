@@ -3,18 +3,19 @@ using Microsoft.Extensions.Configuration;
 namespace RatBot.Infrastructure.Data;
 
 /// <summary>
-/// Builds PostgreSQL connection strings from environment-backed configuration.
+///     Builds PostgreSQL connection strings from environment-backed configuration.
 /// </summary>
 public static class PostgresConnectionStringBuilder
 {
     /// <summary>
-    /// Builds a PostgreSQL connection string from configured values.
+    ///     Builds a PostgreSQL connection string from configured values.
     /// </summary>
     /// <param name="config">The application configuration root.</param>
     /// <returns>The PostgreSQL connection string.</returns>
     public static string Build(IConfiguration config)
     {
         string? connectionString = config["DB:ConnectionString"];
+
         if (!string.IsNullOrWhiteSpace(connectionString))
             return connectionString;
 

@@ -3,12 +3,12 @@ using System.Text.Json.Serialization;
 namespace RatBot.Domain.Features.Quorum;
 
 /// <summary>
-/// Represents quorum behaviour for a guild target.
+///     Represents quorum behaviour for a guild target.
 /// </summary>
 public sealed record QuorumConfig
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="QuorumConfig"/> class.
+    ///     Initializes a new instance of the <see cref="QuorumConfig" /> class.
     /// </summary>
     /// <param name="guildId">The guild identifier.</param>
     /// <param name="targetType">The configuration target type.</param>
@@ -31,32 +31,32 @@ public sealed record QuorumConfig
     }
 
     /// <summary>
-    /// Gets the guild identifier.
+    ///     Gets the guild identifier.
     /// </summary>
     public ulong GuildId { get; }
 
     /// <summary>
-    /// Gets the configuration target type.
+    ///     Gets the configuration target type.
     /// </summary>
     public QuorumConfigType TargetType { get; }
 
     /// <summary>
-    /// Gets the configuration target identifier.
+    ///     Gets the configuration target identifier.
     /// </summary>
     public ulong TargetId { get; }
 
     /// <summary>
-    /// Gets the role identifiers used for quorum counting.
+    ///     Gets the role identifiers used for quorum counting.
     /// </summary>
     public ulong[] RoleIds { get; }
 
     /// <summary>
-    /// Gets the quorum proportion.
+    ///     Gets the quorum proportion.
     /// </summary>
     public double QuorumProportion { get; }
 
     /// <summary>
-    /// Creates a new config using a single role identifier.
+    ///     Creates a new config using a single role identifier.
     /// </summary>
     /// <param name="guildId">The guild identifier.</param>
     /// <param name="targetType">The configuration target type.</param>
@@ -72,7 +72,7 @@ public sealed record QuorumConfig
         double quorumProportion) => Create(guildId, targetType, targetId, [roleId], quorumProportion);
 
     /// <summary>
-    /// Creates a new config.
+    ///     Creates a new config.
     /// </summary>
     /// <param name="guildId">The guild identifier.</param>
     /// <param name="targetType">The configuration target type.</param>
@@ -126,7 +126,7 @@ public sealed record QuorumConfig
     }
 
     /// <summary>
-    /// Creates a replacement config using a single role identifier.
+    ///     Creates a replacement config using a single role identifier.
     /// </summary>
     /// <param name="roleId">The role identifier.</param>
     /// <param name="quorumProportion">The quorum proportion.</param>
@@ -135,7 +135,7 @@ public sealed record QuorumConfig
         Reconfigure([roleId], quorumProportion);
 
     /// <summary>
-    /// Creates a replacement config.
+    ///     Creates a replacement config.
     /// </summary>
     /// <param name="roleIds">The role identifiers.</param>
     /// <param name="quorumProportion">The quorum proportion.</param>

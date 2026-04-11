@@ -1,20 +1,22 @@
 namespace RatBot.Interactions.Common.Discord;
 
 /// <summary>
-/// Splits message text into chunks that respect Discord message length limits.
+///     Splits message text into chunks that respect Discord message length limits.
 /// </summary>
 public static class DiscordMessageChunker
 {
     /// <summary>
-    /// Discord's current maximum number of characters per message.
+    ///     Discord's current maximum number of characters per message.
     /// </summary>
     public const int DiscordMessageCharacterLimit = 2000;
 
     /// <summary>
-    /// Splits a message into chunks no longer than <paramref name="chunkSize"/>.
-    /// Prefers newline boundaries when possible.
+    ///     Splits a message into chunks no longer than <paramref name="chunkSize" />.
+    ///     Prefers newline boundaries when possible.
     /// </summary>
-    public static IReadOnlyList<string> SplitForMessageLimit(string message, int chunkSize = DiscordMessageCharacterLimit)
+    public static IReadOnlyList<string> SplitForMessageLimit(
+        string message,
+        int chunkSize = DiscordMessageCharacterLimit)
     {
         ArgumentNullException.ThrowIfNull(message);
 
@@ -27,6 +29,7 @@ public static class DiscordMessageChunker
         while (index < message.Length)
         {
             int remainingLength = message.Length - index;
+
             if (remainingLength <= chunkSize)
             {
                 chunks.Add(message[index..]);
@@ -35,7 +38,10 @@ public static class DiscordMessageChunker
 
             string window = message.Substring(index, chunkSize);
             int splitAt = window.LastIndexOf('\n');
-            int chunkLength = splitAt > 0 ? splitAt + 1 : chunkSize;
+
+            int chunkLength = splitAt > 0
+                ? splitAt + 1
+                : chunkSize;
 
             chunks.Add(message.Substring(index, chunkLength));
             index += chunkLength;

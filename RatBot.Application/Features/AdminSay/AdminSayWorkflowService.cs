@@ -17,6 +17,7 @@ public sealed class AdminSayWorkflowService(IAdminSaySessionRepository sessionRe
         ArgumentOutOfRangeException.ThrowIfZero(channelId);
 
         DateTimeOffset createdAt = DateTimeOffset.UtcNow;
+
         AdminSaySession session = new AdminSaySession(
             Guid.NewGuid().ToString("N"),
             guildId,

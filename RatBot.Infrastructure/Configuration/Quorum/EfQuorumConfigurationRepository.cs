@@ -5,6 +5,24 @@ namespace RatBot.Infrastructure.Configuration.Quorum;
 
 public sealed class EfQuorumConfigurationRepository(BotDbContext dbContext) : IQuorumConfigurationRepository
 {
+
+    private static QuorumConfig Map(QuorumConfigEntity entity) =>
+        new QuorumConfig(
+            entity.GuildId,
+            entity.TargetType,
+            entity.TargetId,
+            entity.Roles.Select(role => role.RoleId).ToArray(),
+            entity.QuorumProportion);
+
+    private static QuorumConfigEntity Map(QuorumConfig config) =>
+        new QuorumConfigEntity
+        {
+            GuildId = config.GuildId,
+            TargetType = config.TargetType,
+            TargetId = config.TargetId,
+            QuorumProportion = config.QuorumProportion,
+            Roles = config.RoleIds.Select(roleId => new QuorumConfigRoleEntity(roleId)).ToList()
+        };
     public async Task<QuorumConfig?> GetAsync(
         ulong guildId,
         QuorumConfigType targetType,
@@ -44,8 +62,7 @@ public sealed class EfQuorumConfigurationRepository(BotDbContext dbContext) : IQ
         entity.QuorumProportion = config.QuorumProportion;
         dbContext.RemoveRange(entity.Roles);
 
-        entity.Roles = config.RoleIds.Select(roleId => new QuorumConfigRoleEntity(roleId))
-            .ToList();
+        entity.Roles = config.RoleIds.Select(roleId => new QuorumConfigRoleEntity(roleId)).ToList();
 
         await dbContext.SaveChangesAsync(ct);
         return false;
@@ -71,22 +88,4 @@ public sealed class EfQuorumConfigurationRepository(BotDbContext dbContext) : IQ
         await dbContext.SaveChangesAsync(ct);
         return true;
     }
-
-    private static QuorumConfig Map(QuorumConfigEntity entity) =>
-        new QuorumConfig(
-            entity.GuildId,
-            entity.TargetType,
-            entity.TargetId,
-            entity.Roles.Select(role => role.RoleId).ToArray(),
-            entity.QuorumProportion);
-
-    private static QuorumConfigEntity Map(QuorumConfig config) =>
-        new QuorumConfigEntity
-        {
-            GuildId = config.GuildId,
-            TargetType = config.TargetType,
-            TargetId = config.TargetId,
-            QuorumProportion = config.QuorumProportion,
-            Roles = config.RoleIds.Select(roleId => new QuorumConfigRoleEntity(roleId)).ToList()
-        };
 }

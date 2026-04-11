@@ -2,7 +2,7 @@ services:
   loki:
     image: grafana/loki:3.0.0
     restart: unless-stopped
-    command: ["-config.file=/etc/loki/config.yaml"]
+    command: [ "-config.file=/etc/loki/config.yaml" ]
     volumes:
       - ./docker/loki/config.yaml:/etc/loki/config.yaml:ro
       - loki_data:/loki
@@ -12,7 +12,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.99.0
     restart: unless-stopped
-    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    command: [ "--config=/etc/otelcol-contrib/config.yaml" ]
     volumes:
       - ./docker/otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
     depends_on:

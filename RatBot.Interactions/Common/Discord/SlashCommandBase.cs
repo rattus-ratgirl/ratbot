@@ -5,7 +5,7 @@ using RatBot.Interactions.Common.Responses;
 namespace RatBot.Interactions.Common.Discord;
 
 /// <summary>
-/// Provides shared helpers for guild-based Discord slash-command and modal modules.
+///     Provides shared helpers for guild-based Discord slash-command and modal modules.
 /// </summary>
 public abstract class SlashCommandBase : InteractionModuleBase<SocketInteractionContext>
 {
@@ -19,40 +19,43 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
             : InteractionResponse.Public(content);
 
     /// <summary>
-    /// Replies ephemerally with plain text.
+    ///     Replies ephemerally with plain text.
     /// </summary>
     protected Task ReplyAsync(string content) => RunAsync(
         InteractionResponse.Ephemeral(content),
         static response => Task.FromResult(response),
-        defer: false);
+        false);
 
     /// <summary>
-    /// Replies publicly with plain text.
+    ///     Replies publicly with plain text.
     /// </summary>
     protected Task ReplyPublicAsync(string content)
     {
-        return RunAsync(InteractionResponse.Public(content), static response => Task.FromResult(response), defer: false);
+        return RunAsync(InteractionResponse.Public(content), static response => Task.FromResult(response), false);
     }
 
     /// <summary>
-    /// Replies using an explicit interaction response.
+    ///     Replies using an explicit interaction response.
     /// </summary>
     protected Task ReplyAsync(InteractionResponse response)
     {
-        return RunAsync(response, static value => Task.FromResult(value), defer: false);
+        return RunAsync(response, static value => Task.FromResult(value), false);
     }
 
     /// <summary>
-    /// Executes a handler that returns plain text and replies ephemerally.
+    ///     Executes a handler that returns plain text and replies ephemerally.
     /// </summary>
     /// <param name="handler">The handler to execute.</param>
     /// <param name="defer">Whether the interaction should be deferred before running the handler.</param>
     /// <returns>A task that completes when execution and response handling are finished.</returns>
     protected Task ReplyAsync(Func<Task<string>> handler, bool defer = false) =>
-        RunAsync((Handler: handler, IsEphemeral: true), static async state => CreateResponse(await state.Handler(), state.IsEphemeral), defer);
+        RunAsync(
+            (Handler: handler, IsEphemeral: true),
+            static async state => CreateResponse(await state.Handler(), state.IsEphemeral),
+            defer);
 
     /// <summary>
-    /// Executes a handler using typed command arguments and replies ephemerally.
+    ///     Executes a handler using typed command arguments and replies ephemerally.
     /// </summary>
     protected Task ReplyAsync<TArgs>(TArgs args, Func<TArgs, Task<string>> handler, bool defer = false) =>
         RunAsync(
@@ -61,13 +64,16 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
             defer);
 
     /// <summary>
-    /// Executes a handler that returns plain text and replies publicly.
+    ///     Executes a handler that returns plain text and replies publicly.
     /// </summary>
     protected Task ReplyPublicAsync(Func<Task<string>> handler, bool defer = false) =>
-        RunAsync((Handler: handler, IsEphemeral: false), static async state => CreateResponse(await state.Handler(), state.IsEphemeral), defer);
+        RunAsync(
+            (Handler: handler, IsEphemeral: false),
+            static async state => CreateResponse(await state.Handler(), state.IsEphemeral),
+            defer);
 
     /// <summary>
-    /// Executes a handler using typed command arguments and replies publicly.
+    ///     Executes a handler using typed command arguments and replies publicly.
     /// </summary>
     protected Task ReplyPublicAsync<TArgs>(TArgs args, Func<TArgs, Task<string>> handler, bool defer = false) =>
         RunAsync(
@@ -76,36 +82,43 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
             defer);
 
     /// <summary>
-    /// Executes a handler that returns an explicit interaction response.
+    ///     Executes a handler that returns an explicit interaction response.
     /// </summary>
-    protected Task ReplyAsync(Func<Task<InteractionResponse>> handler, bool defer = false) => RunAsync(handler, static value => value(), defer);
+    protected Task ReplyAsync(Func<Task<InteractionResponse>> handler, bool defer = false) =>
+        RunAsync(handler, static value => value(), defer);
 
     /// <summary>
-    /// Executes a handler using typed command arguments and an explicit interaction response.
+    ///     Executes a handler using typed command arguments and an explicit interaction response.
     /// </summary>
     protected Task ReplyAsync<TArgs>(TArgs args, Func<TArgs, Task<InteractionResponse>> handler, bool defer = false) =>
         RunAsync(args, handler, defer);
 
     /// <summary>
-    /// Defers the current interaction using an ephemeral acknowledgement.
+    ///     Defers the current interaction using an ephemeral acknowledgement.
     /// </summary>
-    /// <returns><see langword="true"/> when the interaction was deferred or already acknowledged; otherwise, <see langword="false"/>.</returns>
-    protected async Task<bool> TryDeferEphemeralAsync() => await TryDeferAsync(ephemeral: true);
+    /// <returns>
+    ///     <see langword="true" /> when the interaction was deferred or already acknowledged; otherwise,
+    ///     <see langword="false" />.
+    /// </returns>
+    protected async Task<bool> TryDeferEphemeralAsync() => await TryDeferAsync(true);
 
     /// <summary>
-    /// Defers the current interaction using a public acknowledgement.
+    ///     Defers the current interaction using a public acknowledgement.
     /// </summary>
-    /// <returns><see langword="true"/> when the interaction was deferred or already acknowledged; otherwise, <see langword="false"/>.</returns>
-    protected async Task<bool> TryDeferPublicAsync() => await TryDeferAsync(ephemeral: false);
+    /// <returns>
+    ///     <see langword="true" /> when the interaction was deferred or already acknowledged; otherwise,
+    ///     <see langword="false" />.
+    /// </returns>
+    protected async Task<bool> TryDeferPublicAsync() => await TryDeferAsync(false);
 
     /// <summary>
-    /// Sends an ephemeral message as either an initial response or a follow-up.
+    ///     Sends an ephemeral message as either an initial response or a follow-up.
     /// </summary>
     /// <param name="text">The text to send.</param>
-    protected async Task SendEphemeralAsync(string text) => await TrySendAsync(text, ephemeral: true);
+    protected async Task SendEphemeralAsync(string text) => await TrySendAsync(text, true);
 
     /// <summary>
-    /// Creates a logger with standardized interaction and method context fields.
+    ///     Creates a logger with standardized interaction and method context fields.
     /// </summary>
     /// <param name="methodContext">The logical method context name.</param>
     /// <returns>The enriched logger.</returns>
@@ -116,13 +129,13 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     {
         if (Context.Guild is null)
         {
-            await TrySendAsync(GuildOnlyMessage, ephemeral: true);
+            await TrySendAsync(GuildOnlyMessage, true);
             return;
         }
 
         if (defer)
         {
-            bool deferred = await TryDeferAsync(ephemeral: true);
+            bool deferred = await TryDeferAsync(true);
 
             if (!deferred)
                 return;
@@ -136,7 +149,7 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
         catch (Exception ex)
         {
             CreateMethodLogger(nameof(RunAsync)).Error(ex, "Interaction handler execution failed.");
-            await TrySendAsync(UnexpectedErrorMessage, ephemeral: true);
+            await TrySendAsync(UnexpectedErrorMessage, true);
         }
     }
 
@@ -144,13 +157,17 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
         ILogger logger = CreateInteractionDiagnosticsLogger("interaction_ack", nameof(TryDeferAsync));
-        double interactionAgeMs = Math.Round(DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds, 2);
+
+        double interactionAgeMs = Math.Round(
+            DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds,
+            2);
+
         bool hasRespondedBefore = Context.Interaction.HasResponded;
 
         try
         {
             if (!Context.Interaction.HasResponded)
-                await DeferAsync(ephemeral: ephemeral);
+                await DeferAsync(ephemeral);
 
             logger.Information(
                 "interaction_diag diag_stage={diag_stage} diag_outcome={diag_outcome} defer_ms={defer_ms} interaction_age_ms={interaction_age_ms} ephemeral={ephemeral} has_responded_before={has_responded_before} has_responded_after={has_responded_after}",
@@ -215,7 +232,11 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
         ILogger logger = CreateInteractionDiagnosticsLogger("interaction_send", nameof(TrySendAsync));
-        double interactionAgeMs = Math.Round(DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds, 2);
+
+        double interactionAgeMs = Math.Round(
+            DateTimeOffset.UtcNow.Subtract(Context.Interaction.CreatedAt).TotalMilliseconds,
+            2);
+
         bool hasRespondedBefore = Context.Interaction.HasResponded;
 
         try
@@ -298,8 +319,8 @@ public abstract class SlashCommandBase : InteractionModuleBase<SocketInteraction
         }
     }
 
-    private ILogger CreateInteractionDiagnosticsLogger(string diagComponent, string methodContext)
-    {
-        return CreateMethodLogger(methodContext).ForContext("diag_event", DiagEventName).ForContext("diag_component", diagComponent);
-    }
+    private ILogger CreateInteractionDiagnosticsLogger(string diagComponent, string methodContext) =>
+        CreateMethodLogger(methodContext)
+            .ForContext("diag_event", DiagEventName)
+            .ForContext("diag_component", diagComponent);
 }

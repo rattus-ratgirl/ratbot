@@ -1,18 +1,18 @@
 namespace RatBot.Domain.Entities;
 
 /// <summary>
-/// Represents persisted usage metrics for an emoji.
+///     Represents persisted usage metrics for an emoji.
 /// </summary>
 [Table("EmojiUsageCounts")]
 public sealed class EmojiUsageCount
 {
     /// <summary>
-    /// Gets or sets the emoji identifier.
+    ///     Gets or sets the emoji identifier.
     /// </summary>
     public required string EmojiId { get; set; }
 
     /// <summary>
-    /// Gets or sets the cumulative usage count.
+    ///     Gets or sets the cumulative usage count.
     /// </summary>
     public required int UsageCount { get; set; }
 }
