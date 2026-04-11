@@ -1,20 +1,21 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
+about: Suggest an idea for RatBot
 title: ''
 labels: ''
 assignees: ''
+type: Feature
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+**What's the goal?**
+A short, friendly summary of what you'd like to see added or changed.
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+**Is there a problem you're hitting? (Optional)**
+If something is frustrating or not working quite right, describe it here in simple terms.
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+**Your Idea**
+Describe how you'd like the new feature to work. How would users interact with it? (e.g., "I want to be able to click a button to...")
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+**Anything else? (Optional)**
+Any other thoughts, examples from other bots, or why you think this would be a great addition to the server!
