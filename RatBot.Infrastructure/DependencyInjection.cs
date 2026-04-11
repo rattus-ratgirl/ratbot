@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RatBot.Application.Features.AdminSay;
 using RatBot.Application.Features.Quorum;
 using RatBot.Application.Features.Rps;
-using RatBot.Infrastructure.Configuration.Quorum;
+using RatBot.Infrastructure.Settings;
 using RatBot.Infrastructure.Data;
 using RatBot.Infrastructure.Persistence;
 
@@ -20,9 +20,9 @@ public static class DependencyInjection
 
         services.AddScoped<IBotDataContext>(sp => sp.GetRequiredService<BotDbContext>());
 
-        services.AddSingleton<IAdminSaySessionRepository, InMemoryAdminSaySessionRepository>();
-        services.AddSingleton<IRpsGameRepository, InMemoryRpsGameRepository>();
-        services.AddScoped<IQuorumConfigurationRepository, EfQuorumConfigurationRepository>();
+        services.AddSingleton<IAdminSaySessionStore, AdminSaySessionStore>();
+        services.AddSingleton<IRpsGameStore, RpsGameStore>();
+        services.AddScoped<IQuorumSettingsRepository, QuorumSettingsRepository>();
 
         return services;
     }

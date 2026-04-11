@@ -1,4 +1,5 @@
-using RatBot.Infrastructure.Configuration.Quorum;
+using RatBot.Infrastructure.Settings;
+using QuorumSettings = RatBot.Infrastructure.Settings.QuorumSettings;
 
 namespace RatBot.Infrastructure.Data;
 
@@ -15,52 +16,16 @@ public sealed class BotDbContext : DbContext, IBotDataContext
     {
     }
 
-    public DbSet<QuorumConfigEntity> QuorumConfigs =>
-        Set<QuorumConfigEntity>();
+    public DbSet<QuorumSettings> QuorumSettings =>
+        Set<QuorumSettings>();
 
-    public DbSet<QuorumConfigRoleEntity> QuorumConfigRoles =>
-        Set<QuorumConfigRoleEntity>();
+    public DbSet<Role> QuorumSettingsRoles =>
+        Set<Role>();
 
     public DbSet<EmojiUsageCount> EmojiUsageCounts => Set<EmojiUsageCount>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<EmojiUsageCount>(b =>
-        {
-            b.HasKey(x => x.EmojiId);
-
-            b.Property(x => x.EmojiId).HasMaxLength(128);
-            b.Property(x => x.UsageCount).HasColumnType("int");
-        });
-
-        modelBuilder.Entity<QuorumConfigEntity>(b =>
-        {
-            b.ToTable("QuorumConfigs");
-            b.HasKey(x => new { x.GuildId, x.TargetType, x.TargetId });
-
-            b.Property(x => x.GuildId).HasColumnType("numeric(20,0)");
-            b.Property(x => x.TargetType).HasColumnType("integer");
-            b.Property(x => x.TargetId).HasColumnType("numeric(20,0)");
-            b.Property(x => x.QuorumProportion).HasColumnType("double precision").HasPrecision(6, 4);
-
-            b.HasIndex(x => x.GuildId);
-            b.HasIndex(x => new { x.GuildId, x.TargetType });
-
-            b.HasMany(x => x.Roles)
-                .WithOne()
-                .HasForeignKey("GuildId", "TargetType", "TargetId")
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<QuorumConfigRoleEntity>(b =>
-        {
-            b.ToTable("QuorumConfigRoles");
-            b.Property<ulong>("GuildId").HasColumnType("numeric(20,0)");
-            b.Property<QuorumConfigType>("TargetType").HasColumnType("integer");
-            b.Property<ulong>("TargetId").HasColumnType("numeric(20,0)");
-            b.Property(x => x.RoleId).HasColumnType("numeric(20,0)");
-
-            b.HasKey("GuildId", "TargetType", "TargetId", "RoleId");
-        });
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(BotDbContext).Assembly);
     }
 }

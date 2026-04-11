@@ -8,22 +8,22 @@ namespace RatBot.Domain.Tests;
 /// <summary>
 ///     Tests for the QuorumConfig domain model invariants.
 /// </summary>
-public sealed class QuorumConfigInvariantTests
+public sealed class QuorumSettingsInvariantTests
 {
     private static ulong[] RoleIds(params ulong[] ids) => [..ids];
 
     [Fact]
     public void Create_WithValidParameters_ReturnsInstance()
     {
-        QuorumConfig config = QuorumConfig.Create(
+        QuorumSettings config = QuorumSettings.Create(
             123,
-            QuorumConfigType.Channel,
+            QuorumSettingsType.Channel,
             456,
             RoleIds(10UL, 20UL, 10UL, 30UL),
             0.75);
 
         config.GuildId.ShouldBe(123UL);
-        config.TargetType.ShouldBe(QuorumConfigType.Channel);
+        config.TargetType.ShouldBe(QuorumSettingsType.Channel);
         config.TargetId.ShouldBe(456UL);
         config.RoleIds.ShouldBe(RoleIds(10UL, 20UL, 30UL));
         config.QuorumProportion.ShouldBe(0.75);
@@ -32,7 +32,7 @@ public sealed class QuorumConfigInvariantTests
     [Fact]
     public void Create_SingleRoleOverload_SetsRoleAndProportion()
     {
-        QuorumConfig config = QuorumConfig.Create(123, QuorumConfigType.Category, 456, 99, 0.6);
+        QuorumSettings config = QuorumSettings.Create(123, QuorumSettingsType.Category, 456, 99, 0.6);
 
         config.RoleIds.ShouldBe(RoleIds(99UL));
         config.QuorumProportion.ShouldBe(0.6);
@@ -42,7 +42,7 @@ public sealed class QuorumConfigInvariantTests
     public void Create_WithZeroGuildId_ThrowsArgumentOutOfRange()
     {
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
-            QuorumConfig.Create(0, QuorumConfigType.Channel, 1, RoleIds(1UL), 0.5));
+            QuorumSettings.Create(0, QuorumSettingsType.Channel, 1, RoleIds(1UL), 0.5));
 
         ex.ParamName.ShouldBe("guildId");
     }
@@ -51,7 +51,7 @@ public sealed class QuorumConfigInvariantTests
     public void Create_WithZeroTargetId_ThrowsArgumentOutOfRange()
     {
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
-            QuorumConfig.Create(1, QuorumConfigType.Channel, 0, RoleIds(1UL), 0.5));
+            QuorumSettings.Create(1, QuorumSettingsType.Channel, 0, RoleIds(1UL), 0.5));
 
         ex.ParamName.ShouldBe("targetId");
     }
@@ -60,7 +60,7 @@ public sealed class QuorumConfigInvariantTests
     public void Create_WithInvalidTargetType_ThrowsArgumentOutOfRange()
     {
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
-            QuorumConfig.Create(1, (QuorumConfigType)999, 2, RoleIds(1UL), 0.5));
+            QuorumSettings.Create(1, (QuorumSettingsType)999, 2, RoleIds(1UL), 0.5));
 
         ex.ParamName.ShouldBe("targetType");
     }
@@ -71,7 +71,7 @@ public sealed class QuorumConfigInvariantTests
         ulong[] roleIds = [];
 
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
-            QuorumConfig.Create(1, QuorumConfigType.Channel, 2, roleIds, 0.5));
+            QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, roleIds, 0.5));
 
         ex.ParamName.ShouldBe("roleIds");
     }
@@ -80,7 +80,7 @@ public sealed class QuorumConfigInvariantTests
     public void Create_WithEmptyRoleIds_ThrowsArgumentOutOfRange()
     {
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
-            QuorumConfig.Create(1, QuorumConfigType.Channel, 2, RoleIds(), 0.5));
+            QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(), 0.5));
 
         ex.ParamName.ShouldBe("roleIds");
     }
@@ -89,7 +89,7 @@ public sealed class QuorumConfigInvariantTests
     public void Create_WithZeroRoleId_ThrowsArgumentOutOfRange()
     {
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
-            QuorumConfig.Create(1, QuorumConfigType.Channel, 2, RoleIds(5UL, 0UL), 0.5));
+            QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(5UL, 0UL), 0.5));
 
         ex.ParamName.ShouldBe("roleIds");
     }
@@ -101,7 +101,7 @@ public sealed class QuorumConfigInvariantTests
     public void Create_WithOutOfRangeProportion_ThrowsArgumentOutOfRange(double quorumProportion)
     {
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
-            QuorumConfig.Create(1, QuorumConfigType.Channel, 2, RoleIds(10UL), quorumProportion));
+            QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), quorumProportion));
 
         ex.ParamName.ShouldBe("value");
     }
@@ -110,7 +110,7 @@ public sealed class QuorumConfigInvariantTests
     public void Create_WithNaNProportion_ThrowsArgumentOutOfRange()
     {
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
-            QuorumConfig.Create(1, QuorumConfigType.Channel, 2, RoleIds(10UL), double.NaN));
+            QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), double.NaN));
 
         ex.ParamName.ShouldBe("value");
     }
@@ -121,7 +121,7 @@ public sealed class QuorumConfigInvariantTests
     public void Create_WithInfiniteProportion_ThrowsArgumentOutOfRange(double quorumProportion)
     {
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
-            QuorumConfig.Create(1, QuorumConfigType.Channel, 2, RoleIds(10UL), quorumProportion));
+            QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), quorumProportion));
 
         ex.ParamName.ShouldBe("value");
     }
@@ -129,12 +129,12 @@ public sealed class QuorumConfigInvariantTests
     [Fact]
     public void Reconfigure_WithValidInputs_UpdatesRolesAndProportion()
     {
-        QuorumConfig config = QuorumConfig.Create(1, QuorumConfigType.Channel, 2, RoleIds(11UL), 0.5);
+        QuorumSettings config = QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(11UL), 0.5);
 
-        QuorumConfig reconfigured = config.Reconfigure(RoleIds(3UL, 2UL, 2UL, 1UL), 0.9);
+        QuorumSettings reconfigured = config.Reconfigure(RoleIds(3UL, 2UL, 2UL, 1UL), 0.9);
 
         reconfigured.GuildId.ShouldBe(1UL);
-        reconfigured.TargetType.ShouldBe(QuorumConfigType.Channel);
+        reconfigured.TargetType.ShouldBe(QuorumSettingsType.Channel);
         reconfigured.TargetId.ShouldBe(2UL);
         reconfigured.RoleIds.ShouldBe(RoleIds(3UL, 2UL, 1UL));
         reconfigured.QuorumProportion.ShouldBe(0.9);
@@ -143,12 +143,12 @@ public sealed class QuorumConfigInvariantTests
     [Fact]
     public void Reconfigure_WithSingleRoleOverload_UpdatesRolesAndProportion()
     {
-        QuorumConfig config = QuorumConfig.Create(1, QuorumConfigType.Channel, 2, RoleIds(11UL), 0.5);
+        QuorumSettings config = QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(11UL), 0.5);
 
-        QuorumConfig reconfigured = config.Reconfigure(42UL, 1.0);
+        QuorumSettings reconfigured = config.Reconfigure(42UL, 1.0);
 
         reconfigured.GuildId.ShouldBe(1UL);
-        reconfigured.TargetType.ShouldBe(QuorumConfigType.Channel);
+        reconfigured.TargetType.ShouldBe(QuorumSettingsType.Channel);
         reconfigured.TargetId.ShouldBe(2UL);
         reconfigured.RoleIds.ShouldBe(RoleIds(42UL));
         reconfigured.QuorumProportion.ShouldBe(1.0);
@@ -160,7 +160,7 @@ public sealed class QuorumConfigInvariantTests
     [InlineData(1.01)]
     public void Reconfigure_WithOutOfRangeProportion_ThrowsArgumentOutOfRange(double quorumProportion)
     {
-        QuorumConfig config = QuorumConfig.Create(1, QuorumConfigType.Channel, 2, RoleIds(10UL), 0.5);
+        QuorumSettings config = QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), 0.5);
 
         ArgumentOutOfRangeException ex =
             Should.Throw<ArgumentOutOfRangeException>(() => _ = config.Reconfigure(RoleIds(10UL), quorumProportion));
@@ -171,7 +171,7 @@ public sealed class QuorumConfigInvariantTests
     [Fact]
     public void Reconfigure_WithEmptyRoles_ThrowsArgumentOutOfRange()
     {
-        QuorumConfig config = QuorumConfig.Create(1, QuorumConfigType.Channel, 2, RoleIds(10UL), 0.5);
+        QuorumSettings config = QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), 0.5);
 
         ArgumentOutOfRangeException ex =
             Should.Throw<ArgumentOutOfRangeException>(() => _ = config.Reconfigure(RoleIds(), 0.5));
@@ -182,18 +182,18 @@ public sealed class QuorumConfigInvariantTests
     [Fact]
     public void JsonRoundTrip_WithPersistedShape_DeserializesSuccessfully()
     {
-        QuorumConfig original = QuorumConfig.Create(
+        QuorumSettings original = QuorumSettings.Create(
             123,
-            QuorumConfigType.Channel,
+            QuorumSettingsType.Channel,
             456,
             RoleIds(10UL, 20UL, 30UL),
             0.75);
 
         string json = JsonSerializer.Serialize(original);
 
-        QuorumConfig deserialized = JsonSerializer.Deserialize<QuorumConfig>(json) ??
+        QuorumSettings deserialized = JsonSerializer.Deserialize<QuorumSettings>(json) ??
                                     throw new InvalidOperationException(
-                                        "Expected JSON payload to deserialize into QuorumConfig.");
+                                        "Expected JSON payload to deserialize into QuorumSettings.");
 
         deserialized.GuildId.ShouldBe(original.GuildId);
         deserialized.TargetType.ShouldBe(original.TargetType);
