@@ -1,6 +1,6 @@
 namespace RatBot.Application.Features.Rps;
 
-public sealed class RpsGameService(IRpsGameRepository repository, ILogger logger)
+public sealed class RpsGameService(IRpsGameStore store, ILogger logger)
 {
     private static readonly TimeSpan GameTtl = TimeSpan.FromMinutes(10);
 
@@ -28,7 +28,7 @@ public sealed class RpsGameService(IRpsGameRepository repository, ILogger logger
             null,
             null);
 
-        await repository.CreateAsync(game, ct);
+        await store.CreateAsync(game, ct);
 
         _logger.Information(
             "Created RPS game {GameId} between challenger {ChallengerId} and opponent {OpponentId}.",
@@ -48,6 +48,6 @@ public sealed class RpsGameService(IRpsGameRepository repository, ILogger logger
         ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
         ArgumentOutOfRangeException.ThrowIfZero(userId);
 
-        return repository.SubmitPickAsync(gameId, userId, pick, DateTimeOffset.UtcNow, ct);
+        return store.SubmitPickAsync(gameId, userId, pick, DateTimeOffset.UtcNow, ct);
     }
 }
