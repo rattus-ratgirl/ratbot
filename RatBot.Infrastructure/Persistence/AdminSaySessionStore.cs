@@ -3,7 +3,7 @@ using RatBot.Application.Features.AdminSay;
 
 namespace RatBot.Infrastructure.Persistence;
 
-public sealed class InMemoryAdminSaySessionRepository : IAdminSaySessionRepository
+public sealed class AdminSaySessionStore : IAdminSaySessionStore
 {
     private readonly ConcurrentDictionary<string, AdminSaySession> _sessions =
         new ConcurrentDictionary<string, AdminSaySession>(StringComparer.Ordinal);

@@ -1,6 +1,6 @@
 namespace RatBot.Application.Features.AdminSay;
 
-public interface IAdminSaySessionRepository
+public interface IAdminSaySessionStore
 {
     Task StoreAsync(AdminSaySession session, CancellationToken ct = default);
 

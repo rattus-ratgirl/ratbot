@@ -1,6 +1,6 @@
 namespace RatBot.Application.Features.AdminSay;
 
-public sealed class AdminSayWorkflowService(IAdminSaySessionRepository sessionRepository, ILogger logger)
+public sealed class AdminSayWorkflowService(IAdminSaySessionStore sessionStore, ILogger logger)
 {
     private static readonly TimeSpan SessionTtl = TimeSpan.FromMinutes(5);
 
@@ -26,7 +26,7 @@ public sealed class AdminSayWorkflowService(IAdminSaySessionRepository sessionRe
             createdAt,
             createdAt.Add(SessionTtl));
 
-        await sessionRepository.StoreAsync(session, ct);
+        await sessionStore.StoreAsync(session, ct);
 
         _logger.Information(
             "Created admin-say session {SessionId} for guild {GuildId}, user {UserId}, channel {ChannelId}.",
@@ -48,6 +48,6 @@ public sealed class AdminSayWorkflowService(IAdminSaySessionRepository sessionRe
         ArgumentOutOfRangeException.ThrowIfZero(guildId);
         ArgumentOutOfRangeException.ThrowIfZero(userId);
 
-        return sessionRepository.TryConsumeActiveAsync(sessionId, guildId, userId, DateTimeOffset.UtcNow, ct);
+        return sessionStore.TryConsumeActiveAsync(sessionId, guildId, userId, DateTimeOffset.UtcNow, ct);
     }
 }

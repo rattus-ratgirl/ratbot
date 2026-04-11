@@ -1,6 +1,6 @@
 namespace RatBot.Application.Features.Rps;
 
-public interface IRpsGameRepository
+public interface IRpsGameStore
 {
     Task CreateAsync(RpsGameSession game, CancellationToken ct = default);
 

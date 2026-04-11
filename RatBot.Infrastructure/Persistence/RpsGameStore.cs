@@ -3,7 +3,7 @@ using RatBot.Application.Features.Rps;
 
 namespace RatBot.Infrastructure.Persistence;
 
-public sealed class InMemoryRpsGameRepository : IRpsGameRepository
+public sealed class RpsGameStore : IRpsGameStore
 {
     private readonly ConcurrentDictionary<string, RpsGameSession> _games =
         new ConcurrentDictionary<string, RpsGameSession>(StringComparer.Ordinal);

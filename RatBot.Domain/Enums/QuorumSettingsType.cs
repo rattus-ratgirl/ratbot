@@ -3,7 +3,7 @@ namespace RatBot.Domain.Enums;
 /// <summary>
 ///     Identifies the level used for quorum configuration.
 /// </summary>
-public enum QuorumConfigType
+public enum QuorumSettingsType
 {
     /// <summary>
     ///     Configuration corresponds to an individual text channel.

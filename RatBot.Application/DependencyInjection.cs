@@ -8,14 +8,18 @@ namespace RatBot.Application;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApplication(this IServiceCollection services)
+    extension(IServiceCollection services)
     {
-        services.AddScoped<AdminSayWorkflowService>();
-        services.AddScoped<EmojiAnalyticsService>();
-        services.AddSingleton<EmojiAnalyticsBuffer>();
-        services.AddScoped<QuorumConfigurationService>();
-        services.AddScoped<RpsGameService>();
+        public IServiceCollection AddApplication()
+        {
+            services.AddSingleton<EmojiAnalyticsBuffer>();
 
-        return services;
+            services.AddScoped<AdminSayWorkflowService>();
+            services.AddScoped<EmojiAnalyticsService>();
+            services.AddScoped<QuorumSettingsService>();
+            services.AddScoped<RpsGameService>();
+
+            return services;
+        }
     }
 }

@@ -1,35 +1,34 @@
 using RatBot.Application.Features.Quorum;
 using RatBot.Infrastructure.Data;
 
-namespace RatBot.Infrastructure.Configuration.Quorum;
+namespace RatBot.Infrastructure.Settings;
 
-public sealed class EfQuorumConfigurationRepository(BotDbContext dbContext) : IQuorumConfigurationRepository
+public sealed class QuorumSettingsRepository(BotDbContext dbContext) : IQuorumSettingsRepository
 {
-
-    private static QuorumConfig Map(QuorumConfigEntity entity) =>
-        new QuorumConfig(
+    private static Domain.Features.Quorum.QuorumSettings Map(QuorumSettings entity) =>
+        new Domain.Features.Quorum.QuorumSettings(
             entity.GuildId,
             entity.TargetType,
             entity.TargetId,
             entity.Roles.Select(role => role.RoleId).ToArray(),
             entity.QuorumProportion);
 
-    private static QuorumConfigEntity Map(QuorumConfig config) =>
-        new QuorumConfigEntity
+    private static QuorumSettings Map(Domain.Features.Quorum.QuorumSettings config) =>
+        new QuorumSettings
         {
             GuildId = config.GuildId,
             TargetType = config.TargetType,
             TargetId = config.TargetId,
             QuorumProportion = config.QuorumProportion,
-            Roles = config.RoleIds.Select(roleId => new QuorumConfigRoleEntity(roleId)).ToList()
+            Roles = config.RoleIds.Select(roleId => new Role(roleId)).ToList()
         };
-    public async Task<QuorumConfig?> GetAsync(
+    public async Task<Domain.Features.Quorum.QuorumSettings?> GetAsync(
         ulong guildId,
-        QuorumConfigType targetType,
+        QuorumSettingsType targetType,
         ulong targetId,
         CancellationToken ct = default)
     {
-        QuorumConfigEntity? entity = await dbContext.Set<QuorumConfigEntity>()
+        QuorumSettings? entity = await dbContext.Set<QuorumSettings>()
             .AsNoTracking()
             .Include(config => config.Roles)
             .SingleOrDefaultAsync(
@@ -41,11 +40,11 @@ public sealed class EfQuorumConfigurationRepository(BotDbContext dbContext) : IQ
             : Map(entity);
     }
 
-    public async Task<bool> UpsertAsync(QuorumConfig config, CancellationToken ct = default)
+    public async Task<bool> UpsertAsync(Domain.Features.Quorum.QuorumSettings config, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        QuorumConfigEntity? entity = await dbContext.Set<QuorumConfigEntity>()
+        QuorumSettings? entity = await dbContext.Set<QuorumSettings>()
             .Include(existing => existing.Roles)
             .SingleOrDefaultAsync(
                 existing => existing.GuildId == config.GuildId && existing.TargetType == config.TargetType &&
@@ -59,10 +58,11 @@ public sealed class EfQuorumConfigurationRepository(BotDbContext dbContext) : IQ
             return true;
         }
 
-        entity.QuorumProportion = config.QuorumProportion;
+        entity = entity with { QuorumProportion = config.QuorumProportion };
         dbContext.RemoveRange(entity.Roles);
 
-        entity.Roles = config.RoleIds.Select(roleId => new QuorumConfigRoleEntity(roleId)).ToList();
+        entity = entity with { Roles = config.RoleIds.Select(roleId => new Role(roleId)).ToList() };
+        dbContext.Update(entity);
 
         await dbContext.SaveChangesAsync(ct);
         return false;
@@ -70,11 +70,11 @@ public sealed class EfQuorumConfigurationRepository(BotDbContext dbContext) : IQ
 
     public async Task<bool> DeleteAsync(
         ulong guildId,
-        QuorumConfigType targetType,
+        QuorumSettingsType targetType,
         ulong targetId,
         CancellationToken ct = default)
     {
-        QuorumConfigEntity? entity = await dbContext.Set<QuorumConfigEntity>()
+        QuorumSettings? entity = await dbContext.Set<QuorumSettings>()
             .Include(existing => existing.Roles)
             .SingleOrDefaultAsync(
                 existing => existing.GuildId == guildId && existing.TargetType == targetType &&
