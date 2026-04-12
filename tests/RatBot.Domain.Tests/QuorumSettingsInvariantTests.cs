@@ -8,13 +8,17 @@ namespace RatBot.Domain.Tests;
 /// <summary>
 ///     Tests for the QuorumConfig domain model invariants.
 /// </summary>
+[TestFixture]
 public sealed class QuorumSettingsInvariantTests
 {
     private static ulong[] RoleIds(params ulong[] ids) => [..ids];
 
-    [Fact]
+    [Test]
     public void Create_WithValidParameters_ReturnsInstance()
     {
+        // Arrange
+
+        // Act
         QuorumSettings config = QuorumSettings.Create(
             123,
             QuorumSettingsType.Channel,
@@ -22,6 +26,7 @@ public sealed class QuorumSettingsInvariantTests
             RoleIds(10UL, 20UL, 10UL, 30UL),
             0.75);
 
+        // Assert
         config.GuildId.ShouldBe(123UL);
         config.TargetType.ShouldBe(QuorumSettingsType.Channel);
         config.TargetId.ShouldBe(456UL);
@@ -29,110 +34,152 @@ public sealed class QuorumSettingsInvariantTests
         config.QuorumProportion.ShouldBe(0.75);
     }
 
-    [Fact]
+    [Test]
     public void Create_SingleRoleOverload_SetsRoleAndProportion()
     {
+        // Arrange
+
+        // Act
         QuorumSettings config = QuorumSettings.Create(123, QuorumSettingsType.Category, 456, 99, 0.6);
 
+        // Assert
         config.RoleIds.ShouldBe(RoleIds(99UL));
         config.QuorumProportion.ShouldBe(0.6);
     }
 
-    [Fact]
+    [Test]
     public void Create_WithZeroGuildId_ThrowsArgumentOutOfRange()
     {
+        // Arrange
+
+        // Act
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
             QuorumSettings.Create(0, QuorumSettingsType.Channel, 1, RoleIds(1UL), 0.5));
 
+        // Assert
         ex.ParamName.ShouldBe("guildId");
     }
 
-    [Fact]
+    [Test]
     public void Create_WithZeroTargetId_ThrowsArgumentOutOfRange()
     {
+        // Arrange
+
+        // Act
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
             QuorumSettings.Create(1, QuorumSettingsType.Channel, 0, RoleIds(1UL), 0.5));
 
+        // Assert
         ex.ParamName.ShouldBe("targetId");
     }
 
-    [Fact]
+    [Test]
     public void Create_WithInvalidTargetType_ThrowsArgumentOutOfRange()
     {
+        // Arrange
+
+        // Act
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
             QuorumSettings.Create(1, (QuorumSettingsType)999, 2, RoleIds(1UL), 0.5));
 
+        // Assert
         ex.ParamName.ShouldBe("targetType");
     }
 
-    [Fact]
+    [Test]
     public void Create_WithDefaultRoleIds_ThrowsArgumentOutOfRange()
     {
+        // Arrange
         ulong[] roleIds = [];
 
+        // Act
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
             QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, roleIds, 0.5));
 
+        // Assert
         ex.ParamName.ShouldBe("roleIds");
     }
 
-    [Fact]
+    [Test]
     public void Create_WithEmptyRoleIds_ThrowsArgumentOutOfRange()
     {
+        // Arrange
+
+        // Act
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
             QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(), 0.5));
 
+        // Assert
         ex.ParamName.ShouldBe("roleIds");
     }
 
-    [Fact]
+    [Test]
     public void Create_WithZeroRoleId_ThrowsArgumentOutOfRange()
     {
+        // Arrange
+
+        // Act
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
             QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(5UL, 0UL), 0.5));
 
+        // Assert
         ex.ParamName.ShouldBe("roleIds");
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-0.0001)]
-    [InlineData(1.0001)]
+    [Test]
+    [TestCase(0)]
+    [TestCase(-0.0001)]
+    [TestCase(1.0001)]
     public void Create_WithOutOfRangeProportion_ThrowsArgumentOutOfRange(double quorumProportion)
     {
+        // Arrange
+
+        // Act
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
             QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), quorumProportion));
 
+        // Assert
         ex.ParamName.ShouldBe("value");
     }
 
-    [Fact]
+    [Test]
     public void Create_WithNaNProportion_ThrowsArgumentOutOfRange()
     {
+        // Arrange
+
+        // Act
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
             QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), double.NaN));
 
+        // Assert
         ex.ParamName.ShouldBe("value");
     }
 
-    [Theory]
-    [InlineData(double.PositiveInfinity)]
-    [InlineData(double.NegativeInfinity)]
+    [Test]
+    [TestCase(double.PositiveInfinity)]
+    [TestCase(double.NegativeInfinity)]
     public void Create_WithInfiniteProportion_ThrowsArgumentOutOfRange(double quorumProportion)
     {
+        // Arrange
+
+        // Act
         ArgumentOutOfRangeException ex = Should.Throw<ArgumentOutOfRangeException>(() =>
             QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), quorumProportion));
 
+        // Assert
         ex.ParamName.ShouldBe("value");
     }
 
-    [Fact]
+    [Test]
     public void Reconfigure_WithValidInputs_UpdatesRolesAndProportion()
     {
+        // Arrange
         QuorumSettings config = QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(11UL), 0.5);
 
+        // Act
         QuorumSettings reconfigured = config.Reconfigure(RoleIds(3UL, 2UL, 2UL, 1UL), 0.9);
 
+        // Assert
         reconfigured.GuildId.ShouldBe(1UL);
         reconfigured.TargetType.ShouldBe(QuorumSettingsType.Channel);
         reconfigured.TargetId.ShouldBe(2UL);
@@ -140,13 +187,16 @@ public sealed class QuorumSettingsInvariantTests
         reconfigured.QuorumProportion.ShouldBe(0.9);
     }
 
-    [Fact]
+    [Test]
     public void Reconfigure_WithSingleRoleOverload_UpdatesRolesAndProportion()
     {
+        // Arrange
         QuorumSettings config = QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(11UL), 0.5);
 
+        // Act
         QuorumSettings reconfigured = config.Reconfigure(42UL, 1.0);
 
+        // Assert
         reconfigured.GuildId.ShouldBe(1UL);
         reconfigured.TargetType.ShouldBe(QuorumSettingsType.Channel);
         reconfigured.TargetId.ShouldBe(2UL);
@@ -154,34 +204,41 @@ public sealed class QuorumSettingsInvariantTests
         reconfigured.QuorumProportion.ShouldBe(1.0);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    [InlineData(1.01)]
+    [Test]
+    [TestCase(0)]
+    [TestCase(-1)]
+    [TestCase(1.01)]
     public void Reconfigure_WithOutOfRangeProportion_ThrowsArgumentOutOfRange(double quorumProportion)
     {
+        // Arrange
         QuorumSettings config = QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), 0.5);
 
+        // Act
         ArgumentOutOfRangeException ex =
             Should.Throw<ArgumentOutOfRangeException>(() => _ = config.Reconfigure(RoleIds(10UL), quorumProportion));
 
+        // Assert
         ex.ParamName.ShouldBe("value");
     }
 
-    [Fact]
+    [Test]
     public void Reconfigure_WithEmptyRoles_ThrowsArgumentOutOfRange()
     {
+        // Arrange
         QuorumSettings config = QuorumSettings.Create(1, QuorumSettingsType.Channel, 2, RoleIds(10UL), 0.5);
 
+        // Act
         ArgumentOutOfRangeException ex =
             Should.Throw<ArgumentOutOfRangeException>(() => _ = config.Reconfigure(RoleIds(), 0.5));
 
+        // Assert
         ex.ParamName.ShouldBe("roleIds");
     }
 
-    [Fact]
+    [Test]
     public void JsonRoundTrip_WithPersistedShape_DeserializesSuccessfully()
     {
+        // Arrange
         QuorumSettings original = QuorumSettings.Create(
             123,
             QuorumSettingsType.Channel,
@@ -189,12 +246,14 @@ public sealed class QuorumSettingsInvariantTests
             RoleIds(10UL, 20UL, 30UL),
             0.75);
 
+        // Act
         string json = JsonSerializer.Serialize(original);
 
         QuorumSettings deserialized = JsonSerializer.Deserialize<QuorumSettings>(json) ??
                                     throw new InvalidOperationException(
                                         "Expected JSON payload to deserialize into QuorumSettings.");
 
+        // Assert
         deserialized.GuildId.ShouldBe(original.GuildId);
         deserialized.TargetType.ShouldBe(original.TargetType);
         deserialized.TargetId.ShouldBe(original.TargetId);
