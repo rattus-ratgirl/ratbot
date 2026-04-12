@@ -9,42 +9,48 @@ namespace RatBot.Host;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddHostServices(this IServiceCollection services, IConfiguration configuration)
+    extension(IServiceCollection services)
     {
-        services.AddOptions<DiscordOptions>()
-            .Bind(configuration.GetSection(DiscordOptions.SectionName))
-            .Validate(options => !string.IsNullOrWhiteSpace(options.Token), "Discord token is required.")
-            .Validate(options => options.GuildId != 0, "Discord guild id is required.")
-            .Validate(options => options.MessageCacheSize >= 1000, "Discord message cache size must be at least 1000.")
-            .ValidateOnStart();
-
-        services.AddSingleton(sp =>
+        public void AddHostServices(IConfiguration configuration)
         {
-            DiscordOptions options = sp.GetRequiredService<IOptions<DiscordOptions>>().Value;
+            services
+                .AddOptions<DiscordOptions>()
+                .Bind(configuration.GetSection(DiscordOptions.SectionName))
+                .Validate(options => !string.IsNullOrWhiteSpace(options.Token), "Discord token is required.")
+                .Validate(options => options.GuildId != 0, "Discord guild id is required.")
+                .Validate(
+                    options => options.MessageCacheSize >= 1000,
+                    "Discord message cache size must be at least 1000.")
+                .ValidateOnStart();
 
-            return new DiscordSocketClient(
-                new DiscordSocketConfig
-                {
-                    MessageCacheSize = options.MessageCacheSize,
-                    GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers |
-                                     GatewayIntents.GuildMessages | GatewayIntents.GuildMessageReactions |
-                                     GatewayIntents.MessageContent
-                });
-        });
+            services.AddSingleton(sp =>
+            {
+                DiscordOptions options = sp.GetRequiredService<IOptions<DiscordOptions>>().Value;
 
-        services.AddSingleton(sp => new InteractionService(
-            sp.GetRequiredService<DiscordSocketClient>(),
-            new InteractionServiceConfig { AutoServiceScopes = true }));
+                return new DiscordSocketClient(
+                    new DiscordSocketConfig
+                    {
+                        MessageCacheSize = options.MessageCacheSize,
+                        GatewayIntents = GatewayIntents.Guilds
+                                         | GatewayIntents.GuildMembers
+                                         | GatewayIntents.GuildMessages
+                                         | GatewayIntents.GuildMessageReactions
+                                         | GatewayIntents.MessageContent
+                    });
+            });
 
-        services.AddSingleton<DiscordInteractionHandler>();
-        services.AddSingleton<EmojiReactionGatewayHandler>();
-        services.AddHostedService<DatabaseMigrationHostedService>();
-        services.AddHostedService<DiscordBotHostedService>();
-        services.AddHostedService<EmojiAnalyticsBackgroundWorker>();
+            services.AddSingleton(sp => new InteractionService(
+                sp.GetRequiredService<DiscordSocketClient>(),
+                new InteractionServiceConfig { AutoServiceScopes = true }));
 
-        services.AddApplication();
-        services.AddInfrastructure(configuration);
+            services.AddSingleton<DiscordInteractionHandler>();
+            services.AddSingleton<EmojiReactionGatewayHandler>();
+            services.AddHostedService<DatabaseMigrationHostedService>();
+            services.AddHostedService<DiscordBotHostedService>();
+            services.AddHostedService<EmojiAnalyticsBackgroundWorker>();
 
-        return services;
+            services.AddApplication();
+            services.AddInfrastructure(configuration);
+        }
     }
 }
