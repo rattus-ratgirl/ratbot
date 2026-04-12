@@ -1,4 +1,4 @@
-namespace RatBot.Interactions.Modules.General;
+namespace RatBot.Interactions.Modules;
 
 [UsedImplicitly]
 public sealed class HelloModule(ILogger logger) : SlashCommandBase

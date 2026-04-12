@@ -4,7 +4,7 @@ using Discord.Interactions;
 using Discord.Net;
 using Microsoft.Extensions.Options;
 using RatBot.Host.Configuration;
-using RatBot.Interactions.Modules.General;
+using RatBot.Interactions.Modules;
 using IResult = Discord.Interactions.IResult;
 
 namespace RatBot.Host.Discord;
