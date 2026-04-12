@@ -1,5 +1,4 @@
 using RatBot.Infrastructure.Settings;
-using QuorumSettings = RatBot.Infrastructure.Settings.QuorumSettings;
 
 namespace RatBot.Infrastructure.Data;
 
@@ -16,11 +15,11 @@ public sealed class BotDbContext : DbContext, IBotDataContext
     {
     }
 
-    public DbSet<QuorumSettings> QuorumSettings =>
-        Set<QuorumSettings>();
+    public DbSet<QuorumSettingsEntity> QuorumSettings =>
+        Set<QuorumSettingsEntity>();
 
-    public DbSet<Role> QuorumSettingsRoles =>
-        Set<Role>();
+    public DbSet<RoleEntity> QuorumSettingsRoles =>
+        Set<RoleEntity>();
 
     public DbSet<EmojiUsageCount> EmojiUsageCounts => Set<EmojiUsageCount>();
 

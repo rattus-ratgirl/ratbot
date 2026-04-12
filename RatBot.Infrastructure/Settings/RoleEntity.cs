@@ -1,3 +1,3 @@
 namespace RatBot.Infrastructure.Settings;
 
-public record Role(ulong RoleId);
+public record RoleEntity(ulong RoleId);

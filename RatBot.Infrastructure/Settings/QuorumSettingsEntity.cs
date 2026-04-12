@@ -1,6 +1,6 @@
 namespace RatBot.Infrastructure.Settings;
 
-public record QuorumSettings
+public record QuorumSettingsEntity
 {
     public ulong GuildId { get; init; }
 
@@ -10,5 +10,5 @@ public record QuorumSettings
 
     public double QuorumProportion { get; init; }
 
-    public required List<Role> Roles { get; init; }
+    public required List<RoleEntity> Roles { get; init; }
 }

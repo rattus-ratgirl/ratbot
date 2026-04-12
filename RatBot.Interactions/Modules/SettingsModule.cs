@@ -1,104 +1,143 @@
-using RatBot.Interactions.Common.Settings;
+using ErrorOr;
 
-namespace RatBot.Interactions.Modules.Settings;
+namespace RatBot.Interactions.Modules;
 
 [Group("config", "Configuration commands.")]
 [DefaultMemberPermissions(GuildPermission.Administrator)]
 public sealed class SettingsModule : SlashCommandBase
 {
     [Group("quorum", "Quorum configuration.")]
-    public sealed class QuorumSettingsModule(QuorumSettingsService quorumSettingsService)
-        : GuildSettingsModuleBase
+    public sealed class QuorumSettingsModule(QuorumSettingsService quorumSettingsService) : SlashCommandBase
     {
         [SlashCommand("set", "Create or update a quorum settings for a channel or category ID.")]
         [RequireUserPermission(GuildPermission.Administrator)]
-        public Task SetAsync(string targetId, string roleIds, double proportion) =>
-            ReplyAsync(() => SetResponseAsync(targetId, roleIds, proportion));
+        public async Task SetAsync(string targetId, string roleIds, double proportion)
+        {
+            if (Context.Guild is null)
+            {
+                await RespondAsync("This command can only be used in a guild.", ephemeral: true);
+                return;
+            }
+
+            ErrorOr<ResolvedQuorumTarget> resolvedTargetResult = ResolveQuorumTarget(targetId);
+
+            if (resolvedTargetResult.IsError)
+            {
+                await RespondAsync(resolvedTargetResult.FirstError.Description, ephemeral: true);
+                return;
+            }
+
+            ErrorOr<SocketRole[]> rolesResult = ResolveGuildRoles(
+                roleIds,
+                "Invalid role IDs provided. Please provide a comma-separated list of valid role IDs.",
+                "One or more role IDs are invalid for this guild.");
+
+            if (rolesResult.IsError)
+            {
+                await RespondAsync(rolesResult.FirstError.Description, ephemeral: true);
+                return;
+            }
+
+            ResolvedQuorumTarget resolvedTarget = resolvedTargetResult.Value;
+            SocketRole[] roles = rolesResult.Value;
+
+            ErrorOr<QuorumSettingsUpsertResult> upsertResult = await quorumSettingsService.UpsertAsync(
+                Context.Guild.Id,
+                resolvedTarget.TargetType,
+                resolvedTarget.Channel.Id,
+                roles.Select(role => role.Id).ToArray(),
+                proportion);
+
+            await upsertResult.SwitchFirstAsync(
+                async result => await RespondAsync(
+                    BuildSetResponse(resolvedTarget.Channel, roles, result.Created, proportion),
+                    ephemeral: true),
+                async error => await RespondAsync(DescribeError(error), ephemeral: true));
+        }
 
         [SlashCommand(
             "unset",
             "Remove a quorum settings for a channel or category. The target ID must be a channel or category ID.")]
         [RequireUserPermission(GuildPermission.Administrator)]
-        public Task UnsetAsync(string targetId) => ReplyAsync(() => UnsetResponseAsync(targetId));
-
-        private async Task<string> SetResponseAsync(string targetId, string roleIds, double proportion)
+        public async Task UnsetAsync(string targetId)
         {
-            if (!TryResolveQuorumTarget(targetId, out ResolvedQuorumTarget resolvedTarget, out string errorMessage))
-                return errorMessage;
-
-            if (!TryResolveRoles(roleIds, out SocketRole[] roles, out errorMessage))
-                return errorMessage;
-
-            try
+            if (Context.Guild is null)
             {
-                (bool created, _) = await quorumSettingsService.UpsertAsync(
-                    Guild.Id,
-                    resolvedTarget.TargetType,
-                    resolvedTarget.Channel.Id,
-                    roles.Select(role => role.Id).ToArray(),
-                    proportion);
-
-                string action = created
-                    ? "created"
-                    : "updated";
-
-                string roleSummary = string.Join(", ", roles.Select(role => role.Mention));
-
-                return resolvedTarget.Channel switch
-                {
-                    SocketTextChannel textChannel =>
-                        $"Quorum settings {action} for channel {textChannel.Mention} with roles {roleSummary} and proportion {proportion}.",
-                    SocketCategoryChannel categoryChannel =>
-                        $"Quorum settings {action} for category \"{categoryChannel.Name}\" with roles {roleSummary} and proportion {proportion}.",
-                    _ => "Invalid channel type for quorum settings."
-                };
+                await RespondAsync("This command can only be used in a guild.", ephemeral: true);
+                return;
             }
-            catch (ArgumentOutOfRangeException ex)
+
+            ErrorOr<ResolvedQuorumTarget> resolvedTargetResult = ResolveQuorumTarget(targetId);
+
+            if (resolvedTargetResult.IsError)
             {
-                return ex.ParamName switch
-                {
-                    "value" => "Invalid proportion provided. Please provide a value greater than 0 and at most 1.",
-                    "roleIds" => "Invalid role IDs provided. Please provide a comma-separated list of valid role IDs.",
-                    "targetType" => "Invalid channel type for quorum settings.",
-                    "targetId" => "Invalid target ID provided.",
-                    _ => "Invalid quorum settings provided."
-                };
+                await RespondAsync(resolvedTargetResult.FirstError.Description, ephemeral: true);
+                return;
             }
-        }
 
-        private async Task<string> UnsetResponseAsync(string targetId)
-        {
-            if (!TryResolveQuorumTarget(targetId, out ResolvedQuorumTarget resolvedTarget, out string errorMessage))
-                return errorMessage;
+            ResolvedQuorumTarget resolvedTarget = resolvedTargetResult.Value;
 
-            bool deleted = await quorumSettingsService.DeleteAsync(
-                Guild.Id,
+            ErrorOr<Deleted> deleteResult = await quorumSettingsService.DeleteAsync(
+                Context.Guild.Id,
                 resolvedTarget.TargetType,
                 resolvedTarget.Channel.Id);
 
-            if (!deleted)
-                return "No quorum settings exist for that target.";
+            await deleteResult.SwitchFirstAsync(
+                async _ => await RespondAsync(BuildUnsetResponse(resolvedTarget.Channel), ephemeral: true),
+                async error => await RespondAsync(DescribeError(error), ephemeral: true));
+        }
 
-            return resolvedTarget.Channel switch
+        private static string BuildSetResponse(
+            SocketGuildChannel channel,
+            IReadOnlyCollection<SocketRole> roles,
+            bool created,
+            double proportion)
+        {
+            string action = created
+                ? "created"
+                : "updated";
+
+            string roleSummary = string.Join(", ", roles.Select(role => role.Mention));
+
+            return channel switch
             {
-                SocketTextChannel textChannel => $"Quorum settings removed for channel {textChannel.Mention}.",
+                SocketTextChannel textChannel =>
+                    $"Quorum settings {action} for channel {textChannel.Mention} with roles {roleSummary} and proportion {proportion}.",
                 SocketCategoryChannel categoryChannel =>
-                    $"Quorum settings removed for category \"{categoryChannel.Name}\".",
+                    $"Quorum settings {action} for category \"{categoryChannel.Name}\" with roles {roleSummary} and proportion {proportion}.",
                 _ => "Invalid channel type for quorum settings."
             };
         }
 
-        private bool TryResolveQuorumTarget(
-            string targetId,
-            out ResolvedQuorumTarget resolvedTarget,
-            out string errorMessage)
+        private static string BuildUnsetResponse(SocketGuildChannel channel) =>
+            channel switch
+            {
+                SocketTextChannel textChannel => $"Quorum settings removed for channel {textChannel.Mention}.",
+                SocketCategoryChannel categoryChannel =>
+                    $"Quorum settings removed for category \"{categoryChannel.Name}\".",
+                _ => "Invalid channel type for quorum settings removal."
+            };
+
+        private static string DescribeError(Error error) =>
+            error.Type switch
+            {
+                ErrorType.NotFound => "No quorum settings exist for that target.",
+                _ => error.Description
+            };
+
+        private ErrorOr<ResolvedQuorumTarget> ResolveQuorumTarget(string targetId)
         {
-            resolvedTarget = null!;
+            ErrorOr<SocketGuildChannel> scopeResult = ResolveGuildChannel(
+                targetId,
+                "Invalid scope ID provided.",
+                "Invalid scope ID provided.");
 
-            if (!TryResolveGuildScope(targetId, out SocketGuildChannel? scope, out errorMessage))
-                return false;
+            if (scopeResult.IsError)
+                return scopeResult.Errors;
 
-            QuorumSettingsType? targetType = scope!.ChannelType switch
+            SocketGuildChannel scope = scopeResult.Value;
+
+            QuorumSettingsType? targetType = scope.ChannelType switch
             {
                 ChannelType.Text => QuorumSettingsType.Channel,
                 ChannelType.Category => QuorumSettingsType.Category,
@@ -106,14 +145,9 @@ public sealed class SettingsModule : SlashCommandBase
             };
 
             if (targetType is null)
-            {
-                errorMessage = "Invalid channel type for quorum settings.";
-                return false;
-            }
+                return Error.Validation(description: "Invalid channel type for quorum settings.");
 
-            resolvedTarget = new ResolvedQuorumTarget(scope, targetType.Value);
-            errorMessage = string.Empty;
-            return true;
+            return new ResolvedQuorumTarget(scope, targetType.Value);
         }
 
         private sealed record ResolvedQuorumTarget(SocketGuildChannel Channel, QuorumSettingsType TargetType);

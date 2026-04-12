@@ -1,10 +1,12 @@
+using ErrorOr;
+
 namespace RatBot.Application.Features.Quorum;
 
 public sealed class QuorumSettingsService(IQuorumSettingsRepository repository, ILogger logger)
 {
     private readonly ILogger _logger = logger.ForContext<QuorumSettingsService>();
 
-    public async Task<(bool Created, QuorumSettings Config)> UpsertAsync(
+    public async Task<ErrorOr<QuorumSettingsUpsertResult>> UpsertAsync(
         ulong guildId,
         QuorumSettingsType targetType,
         ulong targetId,
@@ -12,9 +14,8 @@ public sealed class QuorumSettingsService(IQuorumSettingsRepository repository, 
         double quorumProportion,
         CancellationToken ct = default)
     {
-        ArgumentOutOfRangeException.ThrowIfZero(guildId);
-        ArgumentOutOfRangeException.ThrowIfZero(targetId);
-        ArgumentNullException.ThrowIfNull(roleIds);
+        ErrorOr<QuorumSettings> existingResult = await repository.GetAsync(guildId, targetType, targetId);
+        bool created = existingResult.IsError;
 
         QuorumSettings config = new QuorumSettings(
             guildId,
@@ -23,7 +24,12 @@ public sealed class QuorumSettingsService(IQuorumSettingsRepository repository, 
             roleIds.Distinct().ToArray(),
             quorumProportion);
 
-        bool created = await repository.UpsertAsync(config, ct);
+        ErrorOr<Success> upsertResult = await repository.UpsertAsync(config);
+
+        if (upsertResult.IsError)
+        {
+            return upsertResult.Errors;
+        }
 
         _logger.Information(
             "Quorum settings {Action} for guild {GuildId}, target type {TargetType}, target {TargetId}.",
@@ -34,40 +40,40 @@ public sealed class QuorumSettingsService(IQuorumSettingsRepository repository, 
             targetType,
             targetId);
 
-        return (created, config);
+        return new QuorumSettingsUpsertResult(created, config);
     }
 
-    public async Task<bool> DeleteAsync(
+    public async Task<ErrorOr<Deleted>> DeleteAsync(
         ulong guildId,
         QuorumSettingsType targetType,
         ulong targetId,
         CancellationToken ct = default)
     {
-        bool deleted = await repository.DeleteAsync(guildId, targetType, targetId, ct);
+        ErrorOr<Deleted> result = await repository.DeleteAsync(guildId, targetType, targetId);
 
         _logger.Information(
-            "Quorum settings delete attempted for guild {GuildId}, target type {TargetType}, target {TargetId}. Deleted={Deleted}",
+            "Quorum settings delete attempted for guild {GuildId}, target type {TargetType}, target {TargetId}. Success={IsSuccess}",
             guildId,
             targetType,
             targetId,
-            deleted);
+            !result.IsError);
 
-        return deleted;
+        return result;
     }
 
-    public async Task<QuorumSettings?> GetEffectiveAsync(
+    public async Task<ErrorOr<QuorumSettings>> GetEffectiveAsync(
         ulong guildId,
         ulong channelId,
         ulong? categoryId,
         CancellationToken ct = default)
     {
-        QuorumSettings? channelConfig = await repository.GetAsync(guildId, QuorumSettingsType.Channel, channelId, ct);
+        ErrorOr<QuorumSettings> channelConfig = await repository.GetAsync(guildId, QuorumSettingsType.Channel, channelId);
 
-        if (channelConfig is not null)
+        if (!channelConfig.IsError)
             return channelConfig;
 
         return categoryId is null
-            ? null
-            : await repository.GetAsync(guildId, QuorumSettingsType.Category, categoryId.Value, ct);
+            ? channelConfig
+            : await repository.GetAsync(guildId, QuorumSettingsType.Category, categoryId.Value);
     }
 }

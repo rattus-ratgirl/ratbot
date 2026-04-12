@@ -7,6 +7,6 @@ public static class QuorumCalculator
         if (double.IsNaN(quorumProportion) || double.IsInfinity(quorumProportion) || quorumProportion is <= 0 or > 1)
             throw new ArgumentOutOfRangeException(nameof(quorumProportion));
 
-        return (int)Math.Ceiling(eligibleMemberCount * quorumProportion);
+        return (int)Math.Floor(eligibleMemberCount * quorumProportion);
     }
 }

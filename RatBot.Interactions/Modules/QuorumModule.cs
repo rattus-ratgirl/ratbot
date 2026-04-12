@@ -1,6 +1,6 @@
-using RatBot.Interactions.Common.Responses;
+using ErrorOr;
 
-namespace RatBot.Interactions.Modules.Quorum;
+namespace RatBot.Interactions.Modules;
 
 [Group("quorum", "Quorum commands. Group restricted to moderators by default.")]
 [DefaultMemberPermissions(GuildPermission.MuteMembers)]
@@ -8,27 +8,30 @@ public sealed class QuorumModule(ILogger logger, QuorumSettingsService quorumSet
 {
     private readonly ILogger _logger = logger.ForContext<QuorumModule>();
 
-    [UsedImplicitly]
     [SlashCommand("count", "Count the number of members needed for quorum.")]
     [RequireUserPermission(GuildPermission.SendPolls)]
-    public Task CountAsync() => ReplyAsync(CountResponseAsync);
-
-    private async Task<InteractionResponse> CountResponseAsync()
+    public async Task CountAsync()
     {
         if (Context.Channel is not ITextChannel currentChannel)
-            return InteractionResponse.Ephemeral("This command can only be used in a text channel.");
+        {
+            await RespondAsync("This command can only be used in a text channel.", ephemeral: true);
+            return;
+        }
 
         ICategoryChannel? category = await currentChannel.GetCategoryAsync();
 
-        QuorumSettings? config = await quorumSettingsService.GetEffectiveAsync(
+        ErrorOr<QuorumSettings> configResult = await quorumSettingsService.GetEffectiveAsync(
             currentChannel.GuildId,
             currentChannel.Id,
             category?.Id);
 
-        if (config is null)
-            return InteractionResponse.Ephemeral(
-                "No quorum settings found for this channel or category. Please use `/config quorum set` to configure one.");
+        await configResult.SwitchFirstAsync(
+            async config => await RespondWithQuorumCountAsync(config),
+            async error => await RespondAsync(DescribeError(error), ephemeral: true));
+    }
 
+    private async Task RespondWithQuorumCountAsync(QuorumSettings config)
+    {
         logger.Debug("Quorum settings: {Config}", config);
 
         SocketGuild guild = Context.Guild!;
@@ -45,6 +48,11 @@ public sealed class QuorumModule(ILogger logger, QuorumSettingsService quorumSet
             quorumCount,
             config.QuorumProportion);
 
-        return InteractionResponse.Public($"Quorum count for {currentChannel.Mention}: {quorumCount}");
+        await RespondAsync("Quorum count for this channel: " + quorumCount);
     }
+
+    private static string DescribeError(Error error) =>
+        error.Type == ErrorType.NotFound
+            ? "No quorum settings found for this channel or category."
+            : error.Description;
 }

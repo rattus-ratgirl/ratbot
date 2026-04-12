@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using QuorumSettings = RatBot.Infrastructure.Settings.QuorumSettings;
+using RatBot.Infrastructure.Settings;
 
 namespace RatBot.Infrastructure.Configurations;
 
-public sealed class QuorumSettingsConfiguration : IEntityTypeConfiguration<QuorumSettings>
+public sealed class QuorumSettingsConfiguration : IEntityTypeConfiguration<QuorumSettingsEntity>
 {
-    public void Configure(EntityTypeBuilder<QuorumSettings> builder)
+    public void Configure(EntityTypeBuilder<QuorumSettingsEntity> builder)
     {
         builder.ToTable("QuorumSettings");
         builder.HasKey(x => new { x.GuildId, x.TargetType, x.TargetId });

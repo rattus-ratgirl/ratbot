@@ -3,9 +3,9 @@ using RatBot.Infrastructure.Settings;
 
 namespace RatBot.Infrastructure.Configurations;
 
-public sealed class QuorumSettingsRoleConfiguration : IEntityTypeConfiguration<Role>
+public sealed class QuorumSettingsRoleConfiguration : IEntityTypeConfiguration<RoleEntity>
 {
-    public void Configure(EntityTypeBuilder<Role> builder)
+    public void Configure(EntityTypeBuilder<RoleEntity> builder)
     {
         builder.ToTable("QuorumSettingsRoles");
 
