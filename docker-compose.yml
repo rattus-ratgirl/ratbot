@@ -1,4 +1,18 @@
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB__Database:-ratbot}
+      POSTGRES_USER: ${DB__User:-postgres}
+      POSTGRES_PASSWORD: ${DB__Password:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bot-network
+
   loki:
     image: grafana/loki:3.0.0
     restart: unless-stopped
@@ -7,6 +21,7 @@ services:
       - ./docker/loki/config.yaml:/etc/loki/config.yaml:ro
       - loki_data:/loki
     networks:
+      - bot-network
       - observability
 
   otel-collector:
@@ -19,6 +34,7 @@ services:
       loki:
         condition: service_started
     networks:
+      - bot-network
       - observability
 
   grafana:
@@ -37,14 +53,19 @@ services:
       loki:
         condition: service_started
     networks:
+      - bot-network
       - observability
 
 volumes:
+  postgres_data:
+    name: ratbot_postgres_data
   loki_data:
     name: ratbot_loki_data
   grafana_data:
     name: ratbot_grafana_data
 
 networks:
+  bot-network:
+    name: ratbot_network
   observability:
     name: ratbot_observability
