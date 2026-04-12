@@ -47,11 +47,13 @@ public sealed class AdminModule(AdminSendService adminSendService) : Interaction
 
     private async Task<ErrorOr<string>> ProcessAdminSendAsync(ulong channelId, string message)
     {
-        await DeferAsync(ephemeral: true);
+        await DeferAsync(true);
 
         return await adminSendService.SendAsync(new DiscordGuildChannelService(Context.Guild), channelId, message);
     }
 
     private Task RespondEphemeralAsync(string message) =>
-        Context.Interaction.HasResponded ? FollowupAsync(message, ephemeral: true) : RespondAsync(message, ephemeral: true);
+        Context.Interaction.HasResponded
+            ? FollowupAsync(message, ephemeral: true)
+            : RespondAsync(message, ephemeral: true);
 }

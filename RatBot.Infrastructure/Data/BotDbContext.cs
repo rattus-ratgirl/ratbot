@@ -23,8 +23,6 @@ public sealed class BotDbContext : DbContext, IBotDataContext
 
     public DbSet<EmojiUsageCount> EmojiUsageCounts => Set<EmojiUsageCount>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BotDbContext).Assembly);
-    }
 }

@@ -81,7 +81,8 @@ public sealed class EmojiReactionGatewayHandler(
             ? customEmote.Id
             : null;
 
-        _logger.ForContext("ReactionEventType", reactionEventType)
+        _logger
+            .ForContext("ReactionEventType", reactionEventType)
             .ForContext("EmojiName", emote.Name)
             .ForContext("EmojiId", emojiId)
             .ForContext("IsCustomEmoji", emojiId.HasValue)

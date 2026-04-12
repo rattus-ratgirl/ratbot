@@ -8,12 +8,12 @@
 
     <ItemGroup>
         <PackageReference Include="coverlet.collector"/>
-        <PackageReference Include="ErrorOr" />
+        <PackageReference Include="ErrorOr"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="NSubstitute"/>
         <PackageReference Include="Shouldly"/>
-        <PackageReference Include="NUnit" />
-        <PackageReference Include="NUnit3TestAdapter" />
+        <PackageReference Include="NUnit"/>
+        <PackageReference Include="NUnit3TestAdapter"/>
         <PackageReference Include="NUnit.Analyzers">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,7 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\RatBot.Application\RatBot.Application.csproj" />
+        <ProjectReference Include="..\..\RatBot.Application\RatBot.Application.csproj"/>
         <ProjectReference Include="..\..\RatBot.Domain\RatBot.Domain.csproj"/>
     </ItemGroup>
 </Project>

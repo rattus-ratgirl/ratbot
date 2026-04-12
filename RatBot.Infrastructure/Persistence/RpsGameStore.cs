@@ -5,14 +5,12 @@ namespace RatBot.Infrastructure.Persistence;
 
 public sealed class RpsGameStore : IRpsGameStore
 {
-    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
     private readonly ConcurrentDictionary<string, RpsGameSession> _games =
         new ConcurrentDictionary<string, RpsGameSession>(StringComparer.Ordinal);
 
-    public void Create(RpsGameSession game)
-    {
-        _games[game.GameId] = game;
-    }
+    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+
+    public void Create(RpsGameSession game) => _games[game.GameId] = game;
 
     public async Task<ErrorOr<RpsPickSubmissionResult>> SubmitPickAsync(
         string gameId,

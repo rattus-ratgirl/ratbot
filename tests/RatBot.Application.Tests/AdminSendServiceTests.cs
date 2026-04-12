@@ -9,15 +9,15 @@ namespace RatBot.Application.Tests;
 [TestFixture]
 public sealed class AdminSendServiceTests
 {
-    private AdminSendService _service = null!;
-    private IDiscordChannelService _channelService = null!;
-
     [SetUp]
     public void SetUp()
     {
         _service = new AdminSendService();
         _channelService = Substitute.For<IDiscordChannelService>();
     }
+
+    private AdminSendService _service = null!;
+    private IDiscordChannelService _channelService = null!;
 
     [Test]
     public async Task SendAsync_WhenChannelIsMissing_ReturnsChannelNotFoundAndSendsNothing()
@@ -84,9 +84,12 @@ public sealed class AdminSendServiceTests
         // Assert
         result.IsError.ShouldBeFalse();
         result.Value.ShouldBe("Sent your message to <#123>.");
-        await _channelService.Received(1).SendMessagesAsync(
-            123,
-            Arg.Is<IReadOnlyList<string>>(messages => messages.Count == 1 && messages[0] == "hello"));
+
+        await _channelService
+            .Received(1)
+            .SendMessagesAsync(
+                123,
+                Arg.Is<IReadOnlyList<string>>(messages => messages.Count == 1 && messages[0] == "hello"));
     }
 
     [Test]
@@ -104,10 +107,13 @@ public sealed class AdminSendServiceTests
         // Assert
         result.IsError.ShouldBeFalse();
         result.Value.ShouldBe("Sent your message to <#123> in 2 parts.");
-        await _channelService.Received(1).SendMessagesAsync(
-            123,
-            Arg.Is<IReadOnlyList<string>>(messages =>
-                messages.Count == 2 && messages[0] == new string('a', 1999) + "\n" && messages[1] == "second"));
+
+        await _channelService
+            .Received(1)
+            .SendMessagesAsync(
+                123,
+                Arg.Is<IReadOnlyList<string>>(messages =>
+                    messages.Count == 2 && messages[0] == new string('a', 1999) + "\n" && messages[1] == "second"));
     }
 
     [Test]
@@ -116,7 +122,9 @@ public sealed class AdminSendServiceTests
         // Arrange
         _channelService.GetTextChannelAsync(123).Returns(new ResolvedTextChannel(123, "<#123>"));
         _channelService.ValidateBotCanSendAsync(123).Returns(Result.Success);
-        _channelService.SendMessagesAsync(123, Arg.Any<IReadOnlyList<string>>())
+
+        _channelService
+            .SendMessagesAsync(123, Arg.Any<IReadOnlyList<string>>())
             .Returns(Task.FromException<ErrorOr<int>>(new InvalidOperationException("send failed")));
 
         // Act & Assert

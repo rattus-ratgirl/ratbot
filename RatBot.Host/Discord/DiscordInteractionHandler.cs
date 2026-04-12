@@ -125,6 +125,17 @@ public sealed class DiscordInteractionHandler(
             "message_context_author");
     }
 
+    private static IEnumerable<ModuleInfo> EnumerateModules(IEnumerable<ModuleInfo> modules)
+    {
+        foreach (ModuleInfo module in modules)
+        {
+            yield return module;
+
+            foreach (ModuleInfo subModule in EnumerateModules(module.SubModules))
+                yield return subModule;
+        }
+    }
+
     public async Task InitializeAsync(CancellationToken ct)
     {
         Assembly interactionsAssembly = typeof(HelloModule).Assembly;
@@ -133,6 +144,7 @@ public sealed class DiscordInteractionHandler(
         _logger.Information(
             "Registered {InteractionModuleCount} interaction modules.",
             interactionService.Modules.Count);
+
         LogRegisteredInteractionCommands();
 
         discordClient.InteractionCreated += HandleInteractionAsync;
@@ -173,7 +185,8 @@ public sealed class DiscordInteractionHandler(
         {
             IInteractionContext context = new SocketInteractionContext(discordClient, interaction);
 
-            interactionLogger = interactionLogger.ForContext("user_id", context.User.Id)
+            interactionLogger = interactionLogger
+                .ForContext("user_id", context.User.Id)
                 .ForContext("guild_id", context.Guild?.Id)
                 .ForContext("channel_id", context.Channel?.Id);
 
@@ -240,7 +253,8 @@ public sealed class DiscordInteractionHandler(
     {
         CommandUsageDetails usage = GetCommandUsageDetails(interaction);
 
-        interactionLogger.ForContext("method_context", $"{nameof(DiscordInteractionHandler)}.{nameof(LogCommandUsage)}")
+        interactionLogger
+            .ForContext("method_context", $"{nameof(DiscordInteractionHandler)}.{nameof(LogCommandUsage)}")
             .ForContext("command_name", usage.CommandName)
             .ForContext("invoker_user_id", context.User.Id)
             .ForContext("invokee_user_id", usage.InvokeeUserId)
@@ -307,19 +321,9 @@ public sealed class DiscordInteractionHandler(
         }
     }
 
-    private static IEnumerable<ModuleInfo> EnumerateModules(IEnumerable<ModuleInfo> modules)
-    {
-        foreach (ModuleInfo module in modules)
-        {
-            yield return module;
-
-            foreach (ModuleInfo subModule in EnumerateModules(module.SubModules))
-                yield return subModule;
-        }
-    }
-
     private ILogger CreateInteractionDiagnosticsLogger(SocketInteraction interaction) =>
-        _logger.ForContext("diag_event", DiagEventName)
+        _logger
+            .ForContext("diag_event", DiagEventName)
             .ForContext("service_instance_id", _serviceInstanceId)
             .ForContext("process_id", Environment.ProcessId)
             .ForContext("interaction_id", interaction.Id)

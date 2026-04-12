@@ -2,9 +2,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RatBot.Application.Features.Quorum;
 using RatBot.Application.Features.Rps;
-using RatBot.Infrastructure.Settings;
 using RatBot.Infrastructure.Data;
 using RatBot.Infrastructure.Persistence;
+using RatBot.Infrastructure.Settings;
 
 namespace RatBot.Infrastructure;
 

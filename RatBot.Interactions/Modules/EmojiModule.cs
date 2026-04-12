@@ -1,5 +1,6 @@
 using System.Text;
 using RatBot.Application.Features.Emoji;
+
 namespace RatBot.Interactions.Modules;
 
 [Group("emoji", "Emoji analytics commands.")]
@@ -22,7 +23,7 @@ public sealed class EmojiModule(EmojiAnalyticsService emojiAnalyticsService, Dis
 
         foreach (EmojiUsageCount row in topUsage)
             text.AppendLine($"{FormatEmojiForDisplay(row.EmojiId)}: {row.UsageCount}");
-        
+
         await RespondAsync(text.ToString(), ephemeral: true);
     }
 

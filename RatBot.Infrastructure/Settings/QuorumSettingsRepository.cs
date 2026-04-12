@@ -9,7 +9,8 @@ public sealed class QuorumSettingsRepository(BotDbContext dbContext) : IQuorumSe
 
     public async Task<ErrorOr<QuorumSettings>> GetAsync(ulong guildId, QuorumSettingsType targetType, ulong targetId)
     {
-        QuorumSettingsEntity? entity = await dbContext.Set<QuorumSettingsEntity>()
+        QuorumSettingsEntity? entity = await dbContext
+            .Set<QuorumSettingsEntity>()
             .AsNoTracking()
             .Include(config => config.Roles)
             .SingleOrDefaultAsync(config =>
@@ -24,7 +25,8 @@ public sealed class QuorumSettingsRepository(BotDbContext dbContext) : IQuorumSe
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        QuorumSettingsEntity? entity = await dbContext.Set<QuorumSettingsEntity>()
+        QuorumSettingsEntity? entity = await dbContext
+            .Set<QuorumSettingsEntity>()
             .Include(existing => existing.Roles)
             .SingleOrDefaultAsync(existing =>
                 existing.GuildId == config.GuildId
@@ -54,7 +56,8 @@ public sealed class QuorumSettingsRepository(BotDbContext dbContext) : IQuorumSe
 
     public async Task<ErrorOr<Deleted>> DeleteAsync(ulong guildId, QuorumSettingsType targetType, ulong targetId)
     {
-        QuorumSettingsEntity? entity = await dbContext.Set<QuorumSettingsEntity>()
+        QuorumSettingsEntity? entity = await dbContext
+            .Set<QuorumSettingsEntity>()
             .Include(existing => existing.Roles)
             .SingleOrDefaultAsync(existing =>
                 existing.GuildId == guildId && existing.TargetType == targetType && existing.TargetId == targetId);

@@ -6,6 +6,11 @@ public sealed class QuorumModule(ILogger logger, QuorumSettingsService quorumSet
 {
     private readonly ILogger _logger = logger.ForContext<QuorumModule>();
 
+    private static string DescribeError(Error error) =>
+        error.Type == ErrorType.NotFound
+            ? "No quorum settings found for this channel or category."
+            : error.Description;
+
     [SlashCommand("count", "Count the number of members needed for quorum.")]
     [RequireUserPermission(GuildPermission.SendPolls)]
     public async Task CountAsync()
@@ -48,9 +53,4 @@ public sealed class QuorumModule(ILogger logger, QuorumSettingsService quorumSet
 
         await RespondAsync("Quorum count for this channel: " + quorumCount);
     }
-
-    private static string DescribeError(Error error) =>
-        error.Type == ErrorType.NotFound
-            ? "No quorum settings found for this channel or category."
-            : error.Description;
 }

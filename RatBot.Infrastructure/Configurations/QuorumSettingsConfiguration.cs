@@ -18,7 +18,8 @@ public sealed class QuorumSettingsConfiguration : IEntityTypeConfiguration<Quoru
         builder.HasIndex(x => x.GuildId);
         builder.HasIndex(x => new { x.GuildId, x.TargetType });
 
-        builder.HasMany(x => x.Roles)
+        builder
+            .HasMany(x => x.Roles)
             .WithOne()
             .HasForeignKey("GuildId", "TargetType", "TargetId")
             .OnDelete(DeleteBehavior.Cascade);

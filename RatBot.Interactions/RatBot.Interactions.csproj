@@ -8,15 +8,12 @@
     <ItemGroup>
         <PackageReference Include="Discord.Net.Interactions"/>
         <PackageReference Include="Discord.Net.WebSocket"/>
-        <PackageReference Include="ErrorOr" />
+        <PackageReference Include="ErrorOr"/>
         <PackageReference Include="JetBrains.Annotations"/>
         <PackageReference Include="Serilog"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\RatBot.Application\RatBot.Application.csproj"/>
         <ProjectReference Include="..\RatBot.Domain\RatBot.Domain.csproj"/>
-    </ItemGroup>
-    <ItemGroup>
-      <Folder Include="Common\Responses\" />
     </ItemGroup>
 </Project>

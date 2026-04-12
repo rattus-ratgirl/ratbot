@@ -7,10 +7,8 @@ public sealed class EmojiAnalyticsService(IBotDataContext dbContext, ILogger log
 {
     private readonly ILogger _logger = logger.ForContext<EmojiAnalyticsService>();
 
-    public async Task RecordUsageAsync(string emojiId, CancellationToken ct = default)
-    {
+    public async Task RecordUsageAsync(string emojiId, CancellationToken ct = default) =>
         await RecordBatchUsageAsync([emojiId], ct);
-    }
 
     public async Task RecordBatchUsageAsync(IEnumerable<string> emojiIds, CancellationToken ct = default)
     {

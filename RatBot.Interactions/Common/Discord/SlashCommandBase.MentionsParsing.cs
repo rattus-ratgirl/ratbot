@@ -4,6 +4,42 @@ namespace RatBot.Interactions.Common.Discord;
 
 public abstract partial class SlashCommandBase
 {
+    private static ErrorOr<ulong> ParseMentionId(
+        string mentionString,
+        MentionKind expectedKind,
+        string invalidMentionDescription)
+    {
+        if (string.IsNullOrWhiteSpace(mentionString))
+            return Error.Validation(description: invalidMentionDescription);
+
+        if (ulong.TryParse(mentionString, out ulong id))
+            return id;
+
+        Match match = MentionPattern().Match(mentionString);
+
+        if (!match.Success)
+            return Error.Validation(description: invalidMentionDescription);
+
+        MentionKind? actualKind = match.Groups["kind"].Value switch
+        {
+            "#" => MentionKind.Channel,
+            "@&" => MentionKind.Role,
+            "@" or "@!" => MentionKind.User,
+            _ => null
+        };
+
+        if (actualKind is null && actualKind != expectedKind)
+            return Error.Validation(description: invalidMentionDescription);
+
+        if (!ulong.TryParse(match.Groups["id"].Value, out id))
+            return Error.Validation(description: invalidMentionDescription);
+
+        return id;
+    }
+
+    [GeneratedRegex(@"^<(?<kind>#|@&|@!?)(?<id>\d+)>$")]
+    private static partial Regex MentionPattern();
+
     protected ErrorOr<SocketGuildChannel> ResolveGuildChannel(
         string channelId,
         string invalidMentionDescription,
@@ -55,42 +91,6 @@ public abstract partial class SlashCommandBase
 
         return roles.ToArray();
     }
-
-    private static ErrorOr<ulong> ParseMentionId(
-        string mentionString,
-        MentionKind expectedKind,
-        string invalidMentionDescription)
-    {
-        if (string.IsNullOrWhiteSpace(mentionString))
-            return Error.Validation(description: invalidMentionDescription);
-
-        if (ulong.TryParse(mentionString, out ulong id))
-            return id;
-
-        Match match = MentionPattern().Match(mentionString);
-
-        if (!match.Success)
-            return Error.Validation(description: invalidMentionDescription);
-
-        MentionKind? actualKind = match.Groups["kind"].Value switch
-        {
-            "#" => MentionKind.Channel,
-            "@&" => MentionKind.Role,
-            "@" or "@!" => MentionKind.User,
-            _ => null
-        };
-
-        if (actualKind is null && actualKind != expectedKind)
-            return Error.Validation(description: invalidMentionDescription);
-
-        if (!ulong.TryParse(match.Groups["id"].Value, out id))
-            return Error.Validation(description: invalidMentionDescription);
-
-        return id;
-    }
-
-    [GeneratedRegex(@"^<(?<kind>#|@&|@!?)(?<id>\d+)>$")]
-    private static partial Regex MentionPattern();
 
     private enum MentionKind
     {

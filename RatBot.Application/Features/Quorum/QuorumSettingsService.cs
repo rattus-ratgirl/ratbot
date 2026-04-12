@@ -27,9 +27,7 @@ public sealed class QuorumSettingsService(IQuorumSettingsRepository repository, 
         ErrorOr<Success> upsertResult = await repository.UpsertAsync(config);
 
         if (upsertResult.IsError)
-        {
             return upsertResult.Errors;
-        }
 
         _logger.Information(
             "Quorum settings {Action} for guild {GuildId}, target type {TargetType}, target {TargetId}.",
@@ -67,7 +65,10 @@ public sealed class QuorumSettingsService(IQuorumSettingsRepository repository, 
         ulong? categoryId,
         CancellationToken ct = default)
     {
-        ErrorOr<QuorumSettings> channelConfig = await repository.GetAsync(guildId, QuorumSettingsType.Channel, channelId);
+        ErrorOr<QuorumSettings> channelConfig = await repository.GetAsync(
+            guildId,
+            QuorumSettingsType.Channel,
+            channelId);
 
         if (!channelConfig.IsError)
             return channelConfig;

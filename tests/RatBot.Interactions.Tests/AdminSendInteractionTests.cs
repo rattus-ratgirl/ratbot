@@ -41,7 +41,7 @@ public sealed class AdminSendInteractionTests
     {
         // Arrange
         AdminSendInteractionContextBuilder builder = new AdminSendInteractionContextBuilder()
-            .WithBotChannelPermissions(canView: true, canSendMessages: true);
+            .WithBotChannelPermissions(true, true);
 
         // Act
         await builder.ExecuteAdminSendAsync();
@@ -63,14 +63,14 @@ public sealed class AdminSendInteractionTests
         AdminSendInteractionContextBuilder builder = new AdminSendInteractionContextBuilder();
 
         // Act
-        await builder.ExecuteAdminSendModalAsync(invokerUserId: InvokerUserId + 1, message: "hello");
+        await builder.ExecuteAdminSendModalAsync(InvokerUserId + 1, "hello");
 
         // Assert
         await builder
             .Interaction.Received(1)
             .RespondAsync("Only the user who opened this modal can submit it.", ephemeral: true);
 
-        await builder.Interaction.DidNotReceive().DeferAsync(ephemeral: true);
+        await builder.Interaction.DidNotReceive().DeferAsync(true);
         await builder.Guild.DidNotReceive().GetTextChannelAsync(Arg.Any<ulong>());
         await builder.TargetChannel.DidNotReceive().SendMessageAsync(Arg.Any<string>());
     }
@@ -83,11 +83,12 @@ public sealed class AdminSendInteractionTests
             .WithInteractionHasResponded(true);
 
         // Act
-        await builder.ExecuteAdminSendModalAsync(invokerUserId: InvokerUserId, message: "hello");
+        await builder.ExecuteAdminSendModalAsync(InvokerUserId, "hello");
 
         // Assert
-        await builder.Interaction.Received(1).DeferAsync(ephemeral: true);
+        await builder.Interaction.Received(1).DeferAsync(true);
         await builder.TargetChannel.Received(1).SendMessageAsync("hello");
+
         await builder
             .Interaction.Received(1)
             .FollowupAsync($"Sent your message to {builder.TargetChannel.Mention}.", ephemeral: true);
@@ -106,17 +107,18 @@ public sealed class AdminSendInteractionTests
         AdminSendInteractionContextBuilder builder = new AdminSendInteractionContextBuilder()
             .WithInteractionHasResponded(true)
             .WithTargetChannelExists(channelExists)
-            .WithBotChannelPermissions(canView: canSendMessages, canSendMessages);
+            .WithBotChannelPermissions(canSendMessages, canSendMessages);
 
         string expectedError = channelExists
             ? AdminSendErrors.InsufficientPermissions.Description
             : AdminSendErrors.ChannelNotFound.Description;
 
         // Act
-        await builder.ExecuteAdminSendModalAsync(invokerUserId: InvokerUserId, message: "hello");
+        await builder.ExecuteAdminSendModalAsync(InvokerUserId, "hello");
 
         // Assert
-        await builder.Interaction.Received(1).DeferAsync(ephemeral: true);
+        await builder.Interaction.Received(1).DeferAsync(true);
+
         await builder
             .Interaction.Received(1)
             .FollowupAsync(expectedError, ephemeral: true);
@@ -126,32 +128,31 @@ public sealed class AdminSendInteractionTests
 
     private sealed class AdminSendInteractionContextBuilder
     {
-        private readonly IGuild _guild = Substitute.For<IGuild>();
         private readonly IGuildUser _botUser = Substitute.For<IGuildUser>();
-        private readonly IGuildUser _invokerUser = Substitute.For<IGuildUser>();
-        private readonly ITextChannel _targetChannel = Substitute.For<ITextChannel>();
-        private readonly IMessageChannel _sourceChannel = Substitute.For<IMessageChannel>();
         private readonly IInteractionContext _context = Substitute.For<IInteractionContext>();
 
         private readonly ChannelPermissions _defaultBotPermissions =
             new ChannelPermissions(viewChannel: true, sendMessages: true);
 
+        private readonly IGuildUser _invokerUser = Substitute.For<IGuildUser>();
+        private readonly IMessageChannel _sourceChannel = Substitute.For<IMessageChannel>();
+
         public AdminSendInteractionContextBuilder()
         {
-            _targetChannel.Id.Returns(ChannelId);
-            _targetChannel.Mention.Returns($"<#{ChannelId}>");
-            _targetChannel.SendMessageAsync(Arg.Any<string>()).Returns(Substitute.For<IUserMessage>());
+            TargetChannel.Id.Returns(ChannelId);
+            TargetChannel.Mention.Returns($"<#{ChannelId}>");
+            TargetChannel.SendMessageAsync(Arg.Any<string>()).Returns(Substitute.For<IUserMessage>());
             _invokerUser.Id.Returns(InvokerUserId);
             _invokerUser.GuildPermissions.Returns(new GuildPermissions(administrator: true));
-            _guild.GetCurrentUserAsync().Returns(_botUser);
-            _guild.GetTextChannelAsync(ChannelId).Returns(_targetChannel);
-            _botUser.GetPermissions(_targetChannel).Returns(_defaultBotPermissions);
+            Guild.GetCurrentUserAsync().Returns(_botUser);
+            Guild.GetTextChannelAsync(ChannelId).Returns(TargetChannel);
+            _botUser.GetPermissions(TargetChannel).Returns(_defaultBotPermissions);
 
             Interaction.User.Returns(_invokerUser);
             Interaction.HasResponded.Returns(false);
 
             _context.Client.Returns(Substitute.For<IDiscordClient>());
-            _context.Guild.Returns(_guild);
+            _context.Guild.Returns(Guild);
             _context.Channel.Returns(_sourceChannel);
             _context.User.Returns(_invokerUser);
             _context.Interaction.Returns(Interaction);
@@ -159,9 +160,9 @@ public sealed class AdminSendInteractionTests
 
         public IDiscordInteraction Interaction { get; } = Substitute.For<IDiscordInteraction>();
 
-        public IGuild Guild => _guild;
+        public IGuild Guild { get; } = Substitute.For<IGuild>();
 
-        public ITextChannel TargetChannel => _targetChannel;
+        public ITextChannel TargetChannel { get; } = Substitute.For<ITextChannel>();
 
         public AdminSendInteractionContextBuilder WithInteractionHasResponded(bool hasResponded)
         {
@@ -172,9 +173,12 @@ public sealed class AdminSendInteractionTests
 
         public AdminSendInteractionContextBuilder WithTargetChannelExists(bool exists)
         {
-            _guild
+            Guild
                 .GetTextChannelAsync(ChannelId)
-                .Returns(exists ? _targetChannel : null);
+                .Returns(
+                    exists
+                        ? TargetChannel
+                        : null);
 
             return this;
         }
@@ -186,7 +190,7 @@ public sealed class AdminSendInteractionTests
                 sendMessages: canSendMessages);
 
             _botUser
-                .GetPermissions(_targetChannel)
+                .GetPermissions(TargetChannel)
                 .Returns(expectedPermissions);
 
             return this;
@@ -204,7 +208,7 @@ public sealed class AdminSendInteractionTests
             AdminModule module = new AdminModule(services.GetRequiredService<AdminSendService>());
             ((IInteractionModuleBase)module).SetContext(_context);
 
-            await module.SendAsync(_targetChannel);
+            await module.SendAsync(TargetChannel);
         }
 
         public async Task ExecuteAdminSendModalAsync(ulong invokerUserId, string message)

@@ -5,7 +5,7 @@ namespace RatBot.Application.Common.Extensions;
 public static class ErrorOrExtensions
 {
     /// <summary>
-    /// Ensures that the source value satisfies the predicate.
+    ///     Ensures that the source value satisfies the predicate.
     /// </summary>
     /// <param name="source">The source error-or value.</param>
     /// <param name="predicate">The predicate function to validate the source value.</param>

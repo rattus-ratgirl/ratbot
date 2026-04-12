@@ -34,6 +34,8 @@ public sealed class AdminSendService
         int sentCount = sendResult.Value;
         ResolvedTextChannel channel = channelResult.Value;
 
-        return sentCount == 1 ? $"Sent your message to {channel.Mention}." : $"Sent your message to {channel.Mention} in {sentCount} parts.";
+        return sentCount == 1
+            ? $"Sent your message to {channel.Mention}."
+            : $"Sent your message to {channel.Mention} in {sentCount} parts.";
     }
 }

@@ -10,7 +10,8 @@ public static class Program
         Env.TraversePath().Load();
         EnableSerilogSelfDiagnostics();
 
-        using IHost host = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(args)
+        using IHost host = Microsoft
+            .Extensions.Hosting.Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((_, configurationBuilder) => configurationBuilder.AddEnvironmentVariables())
             .UseSerilog((ctx, _, loggerConfiguration) => ConfigureSerilog(ctx.Configuration, loggerConfiguration))
             .ConfigureServices((ctx, services) => services.AddHostServices(ctx.Configuration))
@@ -25,7 +26,8 @@ public static class Program
     {
         string serviceInstanceId = config["OTEL:Resource:ServiceInstanceId"] ?? Environment.MachineName;
 
-        loggerConfiguration.MinimumLevel.Verbose()
+        loggerConfiguration
+            .MinimumLevel.Verbose()
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .Enrich.FromLogContext()
             .Enrich.WithProperty("service_name", config["OTEL:Resource:ServiceName"] ?? "ratbot")
@@ -74,8 +76,8 @@ public static class Program
         string environment = config["OTEL:Resource:Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "production";
         string configuredProtocol = config["OTEL:Logs:Protocol"] ?? "grpc";
 
-        OtlpProtocol protocol = configuredProtocol.Equals("http", StringComparison.OrdinalIgnoreCase) ||
-                                configuredProtocol.Equals("http/protobuf", StringComparison.OrdinalIgnoreCase)
+        OtlpProtocol protocol = configuredProtocol.Equals("http", StringComparison.OrdinalIgnoreCase)
+                                || configuredProtocol.Equals("http/protobuf", StringComparison.OrdinalIgnoreCase)
             ? OtlpProtocol.HttpProtobuf
             : OtlpProtocol.Grpc;
 

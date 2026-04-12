@@ -249,9 +249,9 @@ public sealed class QuorumSettingsInvariantTests
         // Act
         string json = JsonSerializer.Serialize(original);
 
-        QuorumSettings deserialized = JsonSerializer.Deserialize<QuorumSettings>(json) ??
-                                    throw new InvalidOperationException(
-                                        "Expected JSON payload to deserialize into QuorumSettings.");
+        QuorumSettings deserialized = JsonSerializer.Deserialize<QuorumSettings>(json)
+                                      ?? throw new InvalidOperationException(
+                                          "Expected JSON payload to deserialize into QuorumSettings.");
 
         // Assert
         deserialized.GuildId.ShouldBe(original.GuildId);

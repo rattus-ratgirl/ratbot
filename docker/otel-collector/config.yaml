@@ -43,9 +43,9 @@ exporters:
       instance: false
 
 service:
-  extensions: [health_check]
+  extensions: [ health_check ]
   pipelines:
     logs:
-      receivers: [otlp]
-      processors: [memory_limiter, transform, attributes, batch]
-      exporters: [loki]
+      receivers: [ otlp ]
+      processors: [ memory_limiter, transform, attributes, batch ]
+      exporters: [ loki ]

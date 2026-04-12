@@ -43,7 +43,7 @@ public sealed class DiscordUtilsTests
         string message = $"{firstLine}\n{secondLine}";
 
         // Act
-        string[] chunks = DiscordUtils.SplitMessageIntoChunks(message, chunkSize: 12).Value;
+        string[] chunks = DiscordUtils.SplitMessageIntoChunks(message, 12).Value;
 
         // Assert
         chunks.ShouldBe([$"{firstLine}\n", secondLine]);
@@ -56,7 +56,7 @@ public sealed class DiscordUtilsTests
         string message = "abcdef";
 
         // Act
-        string[] chunks = DiscordUtils.SplitMessageIntoChunks(message, chunkSize: 3).Value;
+        string[] chunks = DiscordUtils.SplitMessageIntoChunks(message, 3).Value;
 
         // Assert
         chunks.ShouldBe(["abc", "def"]);
@@ -68,7 +68,7 @@ public sealed class DiscordUtilsTests
         // Arrange
 
         // Act
-        ErrorOr<string[]> result = DiscordUtils.SplitMessageIntoChunks("message", chunkSize: 0);
+        ErrorOr<string[]> result = DiscordUtils.SplitMessageIntoChunks("message", 0);
 
         // Assert
         result.IsError.ShouldBeTrue();
