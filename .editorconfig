@@ -2,6 +2,10 @@
 
 # Microsoft .NET properties
 csharp_preferred_modifier_order = public, private, protected, internal, file, new, async, abstract, virtual, static, readonly, override, extern, unsafe, volatile, sealed, required:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+csharp_style_expression_bodied_constructors = false:none
+csharp_style_expression_bodied_methods = true:none
+csharp_style_expression_bodied_properties = true:suggestion
 
 # ReSharper properties
 resharper_blank_lines_after_multiline_statements = 1
@@ -16,6 +20,7 @@ resharper_csharp_wrap_parameters_style = chop_if_long
 resharper_csharp_wrap_ternary_expr_style = chop_always
 resharper_empty_string = string_empty
 resharper_instance_members_qualify_declared_in = 
+resharper_keep_user_linebreaks = true
 resharper_method_or_operator_body = expression_body
 resharper_parentheses_redundancy_style = remove
 resharper_place_expr_method_on_single_line = if_owner_is_single_line
@@ -23,6 +28,7 @@ resharper_place_expr_property_on_single_line = true
 resharper_place_simple_embedded_statement_on_same_line = false
 resharper_use_continuous_indent_inside_parens = false
 resharper_wrap_before_declaration_rpar = false
+resharper_wrap_before_first_method_call = true
 resharper_wrap_before_invocation_rpar = false
 resharper_wrap_chained_binary_expressions = chop_if_long
 resharper_wrap_chained_method_calls = chop_if_long
