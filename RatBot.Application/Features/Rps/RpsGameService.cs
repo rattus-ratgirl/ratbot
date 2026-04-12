@@ -19,7 +19,6 @@ public sealed class RpsGameService(IRpsGameStore store, ILogger logger)
             Guid.NewGuid().ToString("N"),
             challengerId,
             opponentId,
-            createdAt,
             createdAt.Add(GameTtl),
             null,
             null);
