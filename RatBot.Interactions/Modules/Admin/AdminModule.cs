@@ -1,5 +1,3 @@
-using RatBot.Application.Features.AdminSend;
-
 namespace RatBot.Interactions.Modules.Admin;
 
 [Group("admin", "Administrative commands.")]

@@ -1,6 +1,6 @@
 using ErrorOr;
 
-namespace RatBot.Domain.Features.AdminSend;
+namespace RatBot.Application.Common.Discord;
 
 public static class DiscordUtils
 {

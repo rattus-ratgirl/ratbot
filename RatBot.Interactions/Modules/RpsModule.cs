@@ -1,4 +1,3 @@
-using ErrorOr;
 using RatBot.Application.Features.Rps;
 
 namespace RatBot.Interactions.Modules;

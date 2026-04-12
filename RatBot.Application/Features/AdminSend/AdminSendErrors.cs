@@ -1,6 +1,6 @@
 using ErrorOr;
 
-namespace RatBot.Domain.Features.AdminSend;
+namespace RatBot.Application.Features.AdminSend;
 
 public static class AdminSendErrors
 {

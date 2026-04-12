@@ -1,5 +1,3 @@
-using ErrorOr;
-
 namespace RatBot.Interactions.Modules;
 
 [Group("quorum", "Quorum commands. Group restricted to moderators by default.")]

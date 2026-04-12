@@ -1,5 +1,3 @@
-using ErrorOr;
-
 namespace RatBot.Interactions.Modules;
 
 [Group("config", "Configuration commands.")]

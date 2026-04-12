@@ -1,7 +1,5 @@
 using System.Text;
 using RatBot.Application.Features.Emoji;
-using RatBot.Domain.Entities;
-
 namespace RatBot.Interactions.Modules;
 
 [Group("emoji", "Emoji analytics commands.")]

@@ -1,6 +1,6 @@
 using ErrorOr;
 
-namespace RatBot.Domain.Features.Rps;
+namespace RatBot.Application.Features.Rps;
 
 public static class RpsErrors
 {

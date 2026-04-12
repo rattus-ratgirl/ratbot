@@ -1,5 +1,4 @@
 using RatBot.Application.Common.Discord;
-using RatBot.Application.Features.AdminSend;
 
 namespace RatBot.Interactions.Modules.Admin;
 

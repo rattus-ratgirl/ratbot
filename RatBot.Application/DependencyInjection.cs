@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using RatBot.Application.Features.AdminSend;
-using RatBot.Application.Features.Emoji;
 using RatBot.Application.Features.Quorum;
 using RatBot.Application.Features.Rps;
 

@@ -3,4 +3,7 @@
         <PackageReference Include="ErrorOr" />
         <PackageReference Include="JetBrains.Annotations"/>
     </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Primitives\" />
+    </ItemGroup>
 </Project>

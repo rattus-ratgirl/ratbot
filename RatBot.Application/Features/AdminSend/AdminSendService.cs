@@ -1,6 +1,5 @@
 using ErrorOr;
 using RatBot.Application.Common.Discord;
-using RatBot.Domain.Features.AdminSend;
 
 namespace RatBot.Application.Features.AdminSend;
 

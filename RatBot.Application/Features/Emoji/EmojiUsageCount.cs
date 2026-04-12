@@ -1,9 +1,8 @@
-namespace RatBot.Domain.Entities;
+namespace RatBot.Application.Features.Emoji;
 
 /// <summary>
 ///     Represents persisted usage metrics for an emoji.
 /// </summary>
-[Table("EmojiUsageCounts")]
 public sealed class EmojiUsageCount
 {
     /// <summary>

@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using ErrorOr;
 
 namespace RatBot.Interactions.Common.Discord;
 
