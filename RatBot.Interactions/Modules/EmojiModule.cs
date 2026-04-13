@@ -11,20 +11,19 @@ public sealed class EmojiModule(EmojiAnalyticsService emojiAnalyticsService, Dis
     [SlashCommand("usage", "Show the top 25 emojis by usage.")]
     public async Task UsageAsync()
     {
-        List<EmojiUsageCount> topUsage = await emojiAnalyticsService.GetTopUsageAsync();
+        ErrorOr<List<EmojiUsageCount>> topUsageResult = await emojiAnalyticsService.GetTopUsageAsync();
 
-        if (topUsage.Count == 0)
-        {
-            await RespondAsync("No emoji usage has been recorded yet.", ephemeral: true);
-            return;
-        }
+        await topUsageResult.SwitchFirstAsync(
+            async topUsage =>
+            {
+                StringBuilder text = new StringBuilder("Top emoji usage:\n");
 
-        StringBuilder text = new StringBuilder("Top emoji usage:\n");
+                foreach (EmojiUsageCount row in topUsage)
+                    text.AppendLine($"{FormatEmojiForDisplay(row.EmojiId)}: {row.UsageCount}");
 
-        foreach (EmojiUsageCount row in topUsage)
-            text.AppendLine($"{FormatEmojiForDisplay(row.EmojiId)}: {row.UsageCount}");
-
-        await RespondAsync(text.ToString(), ephemeral: true);
+                await RespondAsync(text.ToString(), ephemeral: true);
+            },
+            async error => await RespondAsync(error.Description, ephemeral: true));
     }
 
     private string FormatEmojiForDisplay(string emojiId)

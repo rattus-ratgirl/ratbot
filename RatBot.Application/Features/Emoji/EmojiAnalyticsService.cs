@@ -1,3 +1,4 @@
+using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using RatBot.Application.Persistence;
 
@@ -50,15 +51,20 @@ public sealed class EmojiAnalyticsService(IBotDataContext dbContext, ILogger log
         }
     }
 
-    public Task<List<EmojiUsageCount>> GetTopUsageAsync(int limit = 25, CancellationToken ct = default)
+    public async Task<ErrorOr<List<EmojiUsageCount>>> GetTopUsageAsync(int limit = 25, CancellationToken ct = default)
     {
         int clampedLimit = Math.Clamp(limit, 1, 100);
 
-        return dbContext
+        List<EmojiUsageCount> topUsage = await dbContext
             .EmojiUsageCounts.AsNoTracking()
             .OrderByDescending(x => x.UsageCount)
             .ThenBy(x => x.EmojiId)
             .Take(clampedLimit)
             .ToListAsync(ct);
+
+        if (topUsage.Count == 0)
+            return Error.NotFound(description: "No emoji usage has been recorded yet.");
+
+        return topUsage;
     }
 }
