@@ -6,6 +6,8 @@ services:
       POSTGRES_DB: ${DB__DATABASE}
       POSTGRES_USER: ${DB__USER}
       POSTGRES_PASSWORD: ${DB__PASSWORD}
+    ports:
+      - "127.0.0.1:15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
