@@ -4,6 +4,9 @@ using RatBot.Application;
 using RatBot.Host.Configuration;
 using RatBot.Host.Discord;
 using RatBot.Infrastructure;
+using RatBot.Interactions.Modules.Meta;
+using RatBot.Interactions.Modules.Meta.Services;
+using RatBot.Interactions.Modules.Meta.State;
 
 namespace RatBot.Host;
 
@@ -45,6 +48,9 @@ public static class DependencyInjection
 
             services.AddSingleton<DiscordInteractionHandler>();
             services.AddSingleton<EmojiReactionGatewayHandler>();
+            services.AddSingleton<MetaSuggestionPendingStore>();
+            services.AddSingleton<DiscordMetaSuggestionForumServiceFactory>(
+                _ => guild => new DiscordMetaSuggestionForumService(guild));
             services.AddHostedService<DatabaseMigrationHostedService>();
             services.AddHostedService<DiscordBotHostedService>();
             services.AddHostedService<EmojiAnalyticsBackgroundWorker>();

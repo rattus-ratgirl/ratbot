@@ -1,9 +1,36 @@
+using RatBot.Application.Features.Meta.Services;
+
 namespace RatBot.Interactions.Modules;
 
 [Group("config", "Configuration commands.")]
 [DefaultMemberPermissions(GuildPermission.Administrator)]
 public sealed class SettingsModule : SlashCommandBase
 {
+    [Group("meta", "Meta configuration.")]
+    public sealed class MetaSettingsModule(MetaSuggestionSettingsService metaSuggestionSettingsService) : SlashCommandBase
+    {
+        [SlashCommand("suggest", "Set the forum channel used for `/meta suggest` submissions.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task SetSuggestForumChannelAsync(IForumChannel channel)
+        {
+            if (Context.Guild is null)
+            {
+                await RespondAsync("This command can only be used in a guild.", ephemeral: true);
+                return;
+            }
+
+            ErrorOr<Success> result = await metaSuggestionSettingsService
+                .UpsertSuggestForumChannelAsync(Context.Guild.Id, channel.Id);
+
+            await result.SwitchFirstAsync(
+                async _ =>
+                    await RespondAsync(
+                        $"Meta suggestion forum set to {channel.Mention}.",
+                        ephemeral: true),
+                async error => await RespondAsync(error.Description, ephemeral: true));
+        }
+    }
+
     [Group("quorum", "Quorum configuration.")]
     public sealed class QuorumSettingsModule(QuorumSettingsService quorumSettingsService) : SlashCommandBase
     {
