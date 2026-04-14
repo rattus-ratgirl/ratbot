@@ -30,6 +30,16 @@ public sealed record QuorumSettings
         QuorumProportion = RequireQuorumProportion(quorumProportion);
     }
 
+    // EF binds this constructor from QuorumConfigs columns and role IDs are loaded separately.
+    private QuorumSettings(
+        ulong guildId,
+        QuorumSettingsType targetType,
+        ulong targetId,
+        double quorumProportion)
+        : this(guildId, targetType, targetId, [], quorumProportion)
+    {
+    }
+
     /// <summary>
     ///     Gets the guild identifier.
     /// </summary>
@@ -86,7 +96,7 @@ public sealed record QuorumSettings
         ulong targetId,
         ulong[] roleIds,
         double quorumProportion) =>
-        new QuorumSettings(guildId, targetType, targetId, roleIds.ToArray(), quorumProportion);
+        new QuorumSettings(guildId, targetType, targetId, roleIds, quorumProportion);
 
     private static ulong RequireDiscordId(ulong value, string paramName) =>
         value == 0
@@ -100,8 +110,6 @@ public sealed record QuorumSettings
 
     private static ulong[] RequireRoleIds(IEnumerable<ulong> roleIds)
     {
-        ArgumentNullException.ThrowIfNull(roleIds);
-
         ulong[] validatedRoleIds = roleIds
             .Select(roleId => RequireDiscordId(roleId, nameof(roleIds)))
             .Distinct()

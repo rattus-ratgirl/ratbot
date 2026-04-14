@@ -16,7 +16,7 @@ public sealed class RpsGameService(IRpsGameStore store, ILogger logger)
         DateTime createdAt = DateTime.UtcNow;
 
         RpsGameSession game = new RpsGameSession(
-            Guid.NewGuid().ToString("N"),
+            Guid.CreateVersion7().ToString("N"),
             challengerId,
             opponentId,
             createdAt.Add(GameTtl),

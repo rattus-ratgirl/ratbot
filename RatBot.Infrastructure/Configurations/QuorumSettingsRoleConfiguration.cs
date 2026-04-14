@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using RatBot.Infrastructure.Settings;
+using RatBot.Infrastructure.Settings.Quorum;
 
 namespace RatBot.Infrastructure.Configurations;
 
@@ -7,7 +7,7 @@ public sealed class QuorumSettingsRoleConfiguration : IEntityTypeConfiguration<R
 {
     public void Configure(EntityTypeBuilder<RoleEntity> builder)
     {
-        builder.ToTable("QuorumSettingsRoles");
+        builder.ToTable("QuorumConfigRoles");
 
         // Shadow properties for composite key from parent
         builder.Property<ulong>("GuildId").HasColumnType("bigint").HasConversion<long>();
@@ -17,5 +17,11 @@ public sealed class QuorumSettingsRoleConfiguration : IEntityTypeConfiguration<R
         builder.Property(x => x.RoleId).HasColumnType("bigint").HasConversion<long>();
 
         builder.HasKey("GuildId", "TargetType", "TargetId", "RoleId");
+
+        builder
+            .HasOne<QuorumSettings>()
+            .WithMany()
+            .HasForeignKey("GuildId", "TargetType", "TargetId")
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
