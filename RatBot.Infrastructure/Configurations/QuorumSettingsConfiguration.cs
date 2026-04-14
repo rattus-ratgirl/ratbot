@@ -1,13 +1,13 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using RatBot.Infrastructure.Settings;
+using RatBot.Infrastructure.Settings.Quorum;
 
 namespace RatBot.Infrastructure.Configurations;
 
-public sealed class QuorumSettingsConfiguration : IEntityTypeConfiguration<QuorumSettingsEntity>
+public sealed class QuorumSettingsConfiguration : IEntityTypeConfiguration<QuorumSettings>
 {
-    public void Configure(EntityTypeBuilder<QuorumSettingsEntity> builder)
+    public void Configure(EntityTypeBuilder<QuorumSettings> builder)
     {
-        builder.ToTable("QuorumSettings");
+        builder.ToTable("QuorumConfigs");
         builder.HasKey(x => new { x.GuildId, x.TargetType, x.TargetId });
 
         builder.Property(x => x.GuildId).HasColumnType("bigint").HasConversion<long>();
@@ -17,11 +17,6 @@ public sealed class QuorumSettingsConfiguration : IEntityTypeConfiguration<Quoru
 
         builder.HasIndex(x => x.GuildId);
         builder.HasIndex(x => new { x.GuildId, x.TargetType });
-
-        builder
-            .HasMany(x => x.Roles)
-            .WithOne()
-            .HasForeignKey("GuildId", "TargetType", "TargetId")
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.Ignore(x => x.RoleIds);
     }
 }
