@@ -105,7 +105,7 @@ public sealed class MetaModule(
             await metaSuggestionService.SubmitAsync(forumServiceFactory(Context.Guild), submissionRequest);
 
         await submitResult.SwitchFirstAsync(
-            async _ => await FollowupAsync("Suggestion submitted :)", ephemeral: true),
+            async _ => await FollowupAsync("Your suggestion has been noted and will now be reviewed by the committee <a:wrattendown:1494139087614120076>", ephemeral: true),
             async error => await FollowupAsync(error.Description, ephemeral: true));
     }
 
