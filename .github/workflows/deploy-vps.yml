@@ -31,11 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       deploy: ${{ steps.resolve.outputs.deploy }}
-      target: ${{ steps.resolve.outputs.target }}
-      environment_name: ${{ steps.resolve.outputs.environment_name }}
-      project: ${{ steps.resolve.outputs.project }}
-      remote_dir: ${{ steps.resolve.outputs.remote_dir }}
-      image_ref: ${{ steps.resolve.outputs.image_ref }}
+      targets: ${{ steps.resolve.outputs.targets }}
       reason: ${{ steps.resolve.outputs.reason }}
     steps:
       - name: Resolve deployment target and image
@@ -56,11 +52,7 @@ jobs:
           image_repo="ghcr.io/${GITHUB_REPOSITORY,,}"
 
           deploy="false"
-          target=""
-          environment_name=""
-          project=""
-          remote_dir=""
-          image_ref=""
+          targets="[]"
           reason=""
 
           if [[ "$EVENT_NAME" == "workflow_run" ]]; then
@@ -72,12 +64,24 @@ jobs:
               reason="Ignoring workflow run from different repository."
             elif [[ "$WORKFLOW_HEAD_BRANCH" == "master" ]]; then
               deploy="true"
-              target="staging"
-              environment_name="staging"
-              project="ratbot-staging"
-              remote_dir="/opt/ratbot/staging"
               image_ref="${image_repo}:sha-${WORKFLOW_HEAD_SHA}"
-              reason="Auto deploy staging from master."
+              targets="$(jq -cn --arg image_ref "$image_ref" '[
+                {
+                  target: "production",
+                  environment_name: "production",
+                  project: "ratbot-production",
+                  remote_dir: "/opt/ratbot/production",
+                  image_ref: $image_ref
+                },
+                {
+                  target: "staging",
+                  environment_name: "staging",
+                  project: "ratbot-staging",
+                  remote_dir: "/opt/ratbot/staging",
+                  image_ref: $image_ref
+                }
+              ]')"
+              reason="Auto deploy production and staging from master."
             else
               reason="Branch is not mapped to auto deployment."
             fi
@@ -85,18 +89,19 @@ jobs:
             case "$INPUT_TARGET" in
               shared)
                 deploy="true"
-                target="shared"
-                environment_name="shared"
-                project="ratbot-shared"
-                remote_dir="/opt/ratbot/shared"
+                targets="$(jq -cn '[
+                  {
+                    target: "shared",
+                    environment_name: "shared",
+                    project: "ratbot-shared",
+                    remote_dir: "/opt/ratbot/shared",
+                    image_ref: ""
+                  }
+                ]')"
                 reason="Manual shared deployment."
                 ;;
               production)
                 deploy="true"
-                target="production"
-                environment_name="production"
-                project="ratbot-production"
-                remote_dir="/opt/ratbot/production"
 
                 if [[ -z "$INPUT_IMAGE_TAG" ]]; then
                   deploy="false"
@@ -108,15 +113,20 @@ jobs:
                 fi
 
                 if [[ "$deploy" == "true" ]]; then
+                  targets="$(jq -cn --arg image_ref "$image_ref" '[
+                    {
+                      target: "production",
+                      environment_name: "production",
+                      project: "ratbot-production",
+                      remote_dir: "/opt/ratbot/production",
+                      image_ref: $image_ref
+                    }
+                  ]')"
                   reason="Manual production deployment."
                 fi
                 ;;
               staging)
                 deploy="true"
-                target="staging"
-                environment_name="staging"
-                project="ratbot-staging"
-                remote_dir="/opt/ratbot/staging"
 
                 tag="${INPUT_IMAGE_TAG:-latest-staging}"
                 if [[ "$tag" == *"/"* ]]; then
@@ -124,6 +134,15 @@ jobs:
                 else
                   image_ref="${image_repo}:${tag}"
                 fi
+                targets="$(jq -cn --arg image_ref "$image_ref" '[
+                  {
+                    target: "staging",
+                    environment_name: "staging",
+                    project: "ratbot-staging",
+                    remote_dir: "/opt/ratbot/staging",
+                    image_ref: $image_ref
+                  }
+                ]')"
                 reason="Manual staging deployment."
                 ;;
               *)
@@ -136,11 +155,7 @@ jobs:
 
           {
             echo "deploy=$deploy"
-            echo "target=$target"
-            echo "environment_name=$environment_name"
-            echo "project=$project"
-            echo "remote_dir=$remote_dir"
-            echo "image_ref=$image_ref"
+            echo "targets=$targets"
             echo "reason=$reason"
           } >> "$GITHUB_OUTPUT"
 
@@ -150,10 +165,7 @@ jobs:
           {
             echo "### Deployment Plan"
             echo '- Deploy: `${{ steps.resolve.outputs.deploy }}`'
-            echo '- Target: `${{ steps.resolve.outputs.target }}`'
-            echo '- Project: `${{ steps.resolve.outputs.project }}`'
-            echo '- Remote dir: `${{ steps.resolve.outputs.remote_dir }}`'
-            echo '- Image ref: `${{ steps.resolve.outputs.image_ref }}`'
+            echo '- Targets: `${{ steps.resolve.outputs.targets }}`'
             echo "- Reason: ${{ steps.resolve.outputs.reason }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -161,9 +173,13 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.deploy == 'true'
     runs-on: ubuntu-latest
-    environment: ${{ needs.prepare.outputs.environment_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.prepare.outputs.targets) }}
+    environment: ${{ matrix.environment_name }}
     concurrency:
-      group: deploy-${{ needs.prepare.outputs.target }}
+      group: deploy-${{ matrix.target }}
       cancel-in-progress: false
     steps:
       - name: Check out repository
@@ -177,10 +193,10 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
-          TARGET: ${{ needs.prepare.outputs.target }}
-          PROJECT: ${{ needs.prepare.outputs.project }}
-          REMOTE_DIR: ${{ needs.prepare.outputs.remote_dir }}
-          IMAGE_REF: ${{ needs.prepare.outputs.image_ref }}
+          TARGET: ${{ matrix.target }}
+          PROJECT: ${{ matrix.project }}
+          REMOTE_DIR: ${{ matrix.remote_dir }}
+          IMAGE_REF: ${{ matrix.image_ref }}
         run: |
           set -euo pipefail
           chmod +x ./scripts/deploy-vps-stack.sh
@@ -202,8 +218,8 @@ jobs:
         run: |
           {
             echo "### Deployment Result"
-            echo '- Target: `${{ needs.prepare.outputs.target }}`'
-            echo '- Project: `${{ needs.prepare.outputs.project }}`'
-            echo '- Remote dir: `${{ needs.prepare.outputs.remote_dir }}`'
-            echo '- Image ref: `${{ needs.prepare.outputs.image_ref }}`'
+            echo '- Target: `${{ matrix.target }}`'
+            echo '- Project: `${{ matrix.project }}`'
+            echo '- Remote dir: `${{ matrix.remote_dir }}`'
+            echo '- Image ref: `${{ matrix.image_ref }}`'
           } >> "$GITHUB_STEP_SUMMARY"
