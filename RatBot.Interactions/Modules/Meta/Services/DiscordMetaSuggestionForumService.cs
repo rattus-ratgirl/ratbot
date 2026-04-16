@@ -17,9 +17,9 @@ public sealed class DiscordMetaSuggestionForumService(IGuild guild) : IDiscordMe
         if (forumChannel is null)
             return MetaSuggestionErrors.ForumNotFound;
 
-        IThreadChannel thread = await forumChannel.CreatePostAsync(title, text: firstPost);
-        await thread.SendMessageAsync(secondPost);
-        await thread.SendMessageAsync(thirdPost);
+        IThreadChannel thread = await forumChannel.CreatePostAsync(title, text: firstPost, allowedMentions: AllowedMentions.None);
+        await thread.SendMessageAsync(secondPost, allowedMentions: AllowedMentions.None);
+        await thread.SendMessageAsync(thirdPost, allowedMentions: AllowedMentions.None);
 
         return new CreatedMetaSuggestionThread(thread.Id);
     }

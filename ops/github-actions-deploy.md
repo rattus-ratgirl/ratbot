@@ -17,7 +17,8 @@
 
 - `.github/workflows/deploy-vps.yml`
     - Auto deploy mapping:
-        - `master` build completion from a push event -> deploy `staging`
+        - `master` build completion from a push event -> deploy `production` and `staging`
+        - both targets use the same immutable `sha-<full_commit_sha>` image
     - Manual dispatch supports:
         - `shared`
         - `production`
@@ -27,6 +28,7 @@
         - `ratbot-production`
         - `ratbot-staging`
     - Prevents overlap with per-target concurrency groups
+    - Runs automatic production and staging deploy jobs independently, so one failed target does not cancel the other
 
 ## Required GitHub Secrets and Variables
 
@@ -46,6 +48,9 @@ Recommended names:
 
 You can store these at repository scope, or per GitHub Environment (`shared`, `staging`, `production`) for stronger
 isolation/approval controls.
+
+If the GitHub `production` environment has required reviewers, automatic production deployment from `master` will pause
+until that protection rule is changed or approved.
 
 ## VPS-side Prerequisites
 
@@ -89,10 +94,10 @@ Use **Actions -> Deploy RatBot to VPS -> Run workflow**:
     - Tag only: `sha-<commit_sha>` or `latest-staging`
     - Or full image ref: `ghcr.io/<owner>/<repo>:sha-<commit_sha>`
 
-Recommended production flow:
+Automatic production flow:
 
-- Let `master` auto-deploy to staging using the immutable `sha-<commit_sha>` image
-- Promote that exact tested image to production manually by supplying the same `sha-<commit_sha>`
+- Let `master` build and publish the immutable `sha-<commit_sha>` image
+- The deploy workflow applies that exact image to both production and staging
 
 For bot stacks, the deploy helper also writes the deployed `RATBOT_IMAGE` back to the server-side `.env` so later manual
 `docker compose` runs do not drift to an older moving tag.
