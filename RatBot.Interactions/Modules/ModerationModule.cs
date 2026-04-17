@@ -13,17 +13,17 @@ public static class ModerationModule
     {
         [SlashCommand("autoban", "Register a user to be banned if they join.")]
         [RequireUserPermission(GuildPermission.BanMembers)]
-        public async Task AutobanAsync([Summary("user", "The Discord user to autoban.")] string user)
+        public async Task AutobanAsync([Summary("User ID", "The Discord user ID to autoban.")] string user)
         {
-            if (!ulong.TryParse(user, out ulong parsedUserId)
-                || !MentionUtils.TryParseUser(user, out parsedUserId)
-                || parsedUserId == 0)
+            if (!ulong.TryParse(user, out ulong parsedUserId) || parsedUserId == 0)
             {
                 await RespondAsync("Enter a valid Discord user ID or mention.", ephemeral: true);
                 return;
             }
 
-            if (Context.Guild.GetUser(parsedUserId) is not null)
+            UserSnowflake bannedUser = parsedUserId;
+
+            if (Context.Guild.GetUser(bannedUser) is not null)
             {
                 await RespondAsync(
                     "That user is currently in the server. Use a regular ban instead.",
@@ -33,7 +33,6 @@ public static class ModerationModule
             }
 
             GuildSnowflake guildId = Context.Guild.Id;
-            UserSnowflake bannedUser = parsedUserId;
             UserSnowflake moderator = Context.User.Id;
 
             ErrorOr<AutobannedUser> result = await moderationService.RegisterAutobanAsync(
