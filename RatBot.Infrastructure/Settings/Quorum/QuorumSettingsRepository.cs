@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using RatBot.Application.Features.Quorum;
 using RatBot.Domain.Primitives;
-using RatBot.Infrastructure.Converters;
 using RatBot.Infrastructure.Data;
 
 namespace RatBot.Infrastructure.Settings.Quorum;

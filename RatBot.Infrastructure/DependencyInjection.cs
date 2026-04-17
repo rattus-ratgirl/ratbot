@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RatBot.Application.Features.Emoji;
 using RatBot.Application.Features.Meta.Interfaces;
 using RatBot.Application.Features.Quorum;
 using RatBot.Application.Features.Rps;

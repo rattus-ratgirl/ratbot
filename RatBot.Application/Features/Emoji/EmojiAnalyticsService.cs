@@ -11,16 +11,16 @@ public sealed class EmojiAnalyticsService(IEmojiRepository emojiRepository, ILog
 
     public async Task RecordBatchUsageAsync(IEnumerable<string> emojiIds, CancellationToken ct = default)
     {
-        List<(string EmojiId, int Count)> usages = emojiIds
+        List<(string Id, int N)> usages = emojiIds
             .GroupBy(x => x)
             .Select(g => (EmojiId: g.Key, Count: g.Count()))
             .ToList();
 
         await emojiRepository.RecordBatchUsageAsync(usages, ct);
 
-        foreach ((string EmojiId, int Count) usage in usages)
+        foreach ((string Id, int N) usage in usages)
         {
-            _logger.Debug("Recorded {EmojiUsageCount} usages for emoji {EmojiId}.", usage.Count, usage.EmojiId);
+            _logger.Debug("Recorded {EmojiUsageCount} usages for emoji {EmojiId}.", usage.N, usage.Id);
         }
     }
 
