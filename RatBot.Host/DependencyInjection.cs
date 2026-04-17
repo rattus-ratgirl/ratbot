@@ -46,10 +46,11 @@ public static class DependencyInjection
                 new InteractionServiceConfig { AutoServiceScopes = true }));
 
             services.AddSingleton<DiscordInteractionHandler>();
+            services.AddSingleton<AutobanGatewayHandler>();
             services.AddSingleton<EmojiReactionGatewayHandler>();
             services.AddSingleton<MetaSuggestionPendingStore>();
             services.AddSingleton<DiscordMetaSuggestionForumServiceFactory>(
-                _ => guild => new DiscordMetaSuggestionForumService(guild));
+                _ => guild => new MetaSuggestionForumService(guild));
             services.AddHostedService<DatabaseMigrationHostedService>();
             services.AddHostedService<DiscordBotHostedService>();
             services.AddHostedService<EmojiAnalyticsBackgroundWorker>();

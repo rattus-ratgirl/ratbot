@@ -11,12 +11,12 @@ public sealed class AdminSendServiceTests
 {
 
     private AdminSendService _service = null!;
-    private IDiscordChannelService _channelService = null!;
+    private ITextChannelService _channelService = null!;
     [SetUp]
     public void SetUp()
     {
         _service = new AdminSendService();
-        _channelService = Substitute.For<IDiscordChannelService>();
+        _channelService = Substitute.For<ITextChannelService>();
     }
 
     [Test]

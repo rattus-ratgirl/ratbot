@@ -17,6 +17,14 @@ public sealed class MetaModule(
     private const string ModalCustomIdPrefix = "meta-suggest";
     private const string AnonymityCustomIdPrefix = "meta-suggest-anon";
 
+    private static ErrorOr<MetaSuggestionAnonymity> ParseAnonymity(string value) =>
+        value.ToLowerInvariant() switch
+        {
+            "anonymous" => MetaSuggestionAnonymity.Anonymous,
+            "public" => MetaSuggestionAnonymity.Public,
+            _ => MetaSuggestionErrors.InvalidAnonymityPreference
+        };
+
     [SlashCommand("suggest", "Submit a meta suggestion.")]
     public async Task SuggestAsync()
     {
@@ -99,12 +107,4 @@ public sealed class MetaModule(
             async _ => await FollowupAsync("Your suggestion has been noted and will now be reviewed by the committee <a:wrattendown:1494139087614120076>", ephemeral: true),
             async error => await FollowupAsync(error.Description, ephemeral: true));
     }
-
-    private static ErrorOr<MetaSuggestionAnonymity> ParseAnonymity(string value) =>
-        value.ToLowerInvariant() switch
-        {
-            "anonymous" => MetaSuggestionAnonymity.Anonymous,
-            "public" => MetaSuggestionAnonymity.Public,
-            _ => MetaSuggestionErrors.InvalidAnonymityPreference
-        };
 }

@@ -7,6 +7,7 @@ namespace RatBot.Host.Discord;
 public sealed class DiscordBotHostedService : IHostedService
 {
     private readonly DiscordSocketClient _discordClient;
+    private readonly AutobanGatewayHandler _autobanGatewayHandler;
     private readonly EmojiReactionGatewayHandler _emojiReactionHandler;
     private readonly DiscordInteractionHandler _interactionHandler;
     private readonly ILogger _logger;
@@ -16,12 +17,14 @@ public sealed class DiscordBotHostedService : IHostedService
         DiscordSocketClient discordClient,
         InteractionService interactionService,
         DiscordInteractionHandler interactionHandler,
+        AutobanGatewayHandler autobanGatewayHandler,
         EmojiReactionGatewayHandler emojiReactionHandler,
         IOptions<DiscordOptions> options,
         ILogger logger)
     {
         _discordClient = discordClient;
         _interactionHandler = interactionHandler;
+        _autobanGatewayHandler = autobanGatewayHandler;
         _emojiReactionHandler = emojiReactionHandler;
         _options = options.Value;
         _logger = logger.ForContext<DiscordBotHostedService>();
@@ -45,6 +48,7 @@ public sealed class DiscordBotHostedService : IHostedService
         _discordClient.Disconnected += OnDisconnectedAsync;
 
         await _interactionHandler.InitializeAsync(cancellationToken);
+        _autobanGatewayHandler.Subscribe();
         _emojiReactionHandler.Subscribe();
 
         await _discordClient.LoginAsync(TokenType.Bot, _options.Token);
@@ -54,6 +58,7 @@ public sealed class DiscordBotHostedService : IHostedService
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         _emojiReactionHandler.Unsubscribe();
+        _autobanGatewayHandler.Unsubscribe();
         _interactionHandler.Unsubscribe();
 
         _discordClient.Connected -= OnConnectedAsync;

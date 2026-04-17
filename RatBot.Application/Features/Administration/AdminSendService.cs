@@ -7,7 +7,7 @@ public sealed class AdminSendService
     private readonly Func<string, ErrorOr<string[]>> _splitMessage;
 
     public AdminSendService()
-        : this(message => DiscordUtils.SplitMessageIntoChunks(message))
+        : this(message => Utilities.SplitMessageIntoChunks(message))
     {
     }
 
@@ -16,7 +16,7 @@ public sealed class AdminSendService
         _splitMessage = splitMessage;
     }
 
-    public async Task<ErrorOr<string>> SendAsync(IDiscordChannelService channelService, ulong channelId, string message)
+    public async Task<ErrorOr<string>> SendAsync(ITextChannelService channelService, ulong channelId, string message)
     {
         if (string.IsNullOrWhiteSpace(message))
             return AdminSendErrors.EmptyMessage;

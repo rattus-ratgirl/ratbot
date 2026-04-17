@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RatBot.Application.Features.Meta.Interfaces;
+using RatBot.Application.Features.Moderation.Interfaces;
 using RatBot.Application.Features.Quorum;
 using RatBot.Application.Features.Rps;
 using RatBot.Infrastructure.Data;
@@ -25,6 +26,7 @@ public static class DependencyInjection
 
             services.AddScoped<IMetaSuggestionRepository, MetaSuggestionRepository>();
             services.AddScoped<IMetaSuggestionSettingsRepository, MetaSuggestionSettingsRepository>();
+            services.AddScoped<IAutobannedUserRepository, AutobannedUserRepository>();
             services.AddScoped<IQuorumSettingsRepository, QuorumSettingsRepository>();
             services.AddScoped<IEmojiRepository, EmojiRepository>();
         }

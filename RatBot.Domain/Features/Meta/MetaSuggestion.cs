@@ -73,6 +73,11 @@ public sealed class MetaSuggestion
         };
     }
 
+    private static Error RequiredFieldMissing(string fieldName) =>
+        Error.Validation(
+            $"MetaSuggestion.{fieldName}Required",
+            $"Meta suggestion {fieldName.ToLowerInvariant()} is required.");
+
     public ErrorOr<Success> AttachThread(ChannelSnowflake threadChannelId)
     {
         if (ThreadChannelId is not null)
@@ -83,9 +88,4 @@ public sealed class MetaSuggestion
         ThreadChannelId = threadChannelId;
         return Result.Success;
     }
-
-    private static Error RequiredFieldMissing(string fieldName) =>
-        Error.Validation(
-            $"MetaSuggestion.{fieldName}Required",
-            $"Meta suggestion {fieldName.ToLowerInvariant()} is required.");
 }

@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using RatBot.Application.Features.Administration;
 using RatBot.Application.Features.Meta.Services;
+using RatBot.Application.Features.Moderation.Interfaces;
+using RatBot.Application.Features.Moderation.Services;
 using RatBot.Application.Features.Quorum;
 using RatBot.Application.Features.Rps;
 
@@ -18,6 +20,7 @@ public static class DependencyInjection
             services.AddScoped<EmojiAnalyticsService>();
             services.AddScoped<MetaSuggestionService>();
             services.AddScoped<MetaSuggestionSettingsService>();
+            services.AddScoped<IModerationService, ModerationService>();
             services.AddScoped<QuorumSettingsService>();
             services.AddScoped<RpsGameService>();
 

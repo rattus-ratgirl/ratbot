@@ -1,6 +1,6 @@
 namespace RatBot.Application.Common.Discord;
 
-public static class DiscordUtils
+public static class Utilities
 {
     private const int DiscordMessageCharacterLimit = 2000;
 

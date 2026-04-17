@@ -8,7 +8,7 @@ using Shouldly;
 namespace RatBot.Interactions.Tests;
 
 [TestFixture]
-public sealed class DiscordGuildChannelServiceTests
+public sealed class TextChannelServiceTests
 {
     private const ulong ChannelId = 456;
 
@@ -19,7 +19,7 @@ public sealed class DiscordGuildChannelServiceTests
     private IGuild _guild = null!;
     private IGuildUser _botUser = null!;
     private ITextChannel _channel = null!;
-    private DiscordGuildChannelService _service = null!;
+    private TextChannelService _service = null!;
 
     [SetUp]
     public void SetUp()
@@ -27,7 +27,7 @@ public sealed class DiscordGuildChannelServiceTests
         _guild = Substitute.For<IGuild>();
         _botUser = Substitute.For<IGuildUser>();
         _channel = Substitute.For<ITextChannel>();
-        _service = new DiscordGuildChannelService(_guild);
+        _service = new TextChannelService(_guild);
 
         _guild.GetCurrentUserAsync().Returns(_botUser);
         _guild.GetTextChannelAsync(ChannelId).Returns(_channel);

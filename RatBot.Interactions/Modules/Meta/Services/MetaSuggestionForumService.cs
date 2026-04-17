@@ -4,7 +4,7 @@ using RatBot.Domain.Primitives;
 
 namespace RatBot.Interactions.Modules.Meta.Services;
 
-public sealed class DiscordMetaSuggestionForumService(IGuild guild) : IDiscordMetaSuggestionForumService
+public sealed class MetaSuggestionForumService(IGuild guild) : IMetaSuggestionForumService
 {
     public async Task<ErrorOr<CreatedMetaSuggestionThread>> CreateSuggestionThreadAsync(
         ChannelSnowflake forumChannelId,

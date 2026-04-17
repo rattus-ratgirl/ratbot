@@ -20,6 +20,7 @@ public sealed class BotDbContext : DbContext
     public DbSet<EmojiUsageCount> EmojiUsageCounts => Set<EmojiUsageCount>();
     public DbSet<MetaSuggestion> MetaSuggestions => Set<MetaSuggestion>();
     public DbSet<MetaSuggestionSettings> MetaSuggestionSettings => Set<MetaSuggestionSettings>();
+    public DbSet<AutobannedUser> AutobannedUsers => Set<AutobannedUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BotDbContext).Assembly);

@@ -4,7 +4,7 @@ using Shouldly;
 
 namespace RatBot.Domain.Tests;
 
-public sealed class DiscordUtilsTests
+public sealed class UtilitiesTests
 {
     [Test]
     public void SplitMessageIntoChunks_WithExactLimit_ReturnsOneChunk()
@@ -13,7 +13,7 @@ public sealed class DiscordUtilsTests
         string message = new string('a', 2000);
 
         // Act
-        string[] chunks = DiscordUtils.SplitMessageIntoChunks(message).Value;
+        string[] chunks = Utilities.SplitMessageIntoChunks(message).Value;
 
         // Assert
         chunks.ShouldBe([message]);
@@ -26,7 +26,7 @@ public sealed class DiscordUtilsTests
         string message = new string('a', 2001);
 
         // Act
-        string[] chunks = DiscordUtils.SplitMessageIntoChunks(message).Value;
+        string[] chunks = Utilities.SplitMessageIntoChunks(message).Value;
 
         // Assert
         chunks.Length.ShouldBe(2);
@@ -43,7 +43,7 @@ public sealed class DiscordUtilsTests
         string message = $"{firstLine}\n{secondLine}";
 
         // Act
-        string[] chunks = DiscordUtils.SplitMessageIntoChunks(message, 12).Value;
+        string[] chunks = Utilities.SplitMessageIntoChunks(message, 12).Value;
 
         // Assert
         chunks.ShouldBe([$"{firstLine}\n", secondLine]);
@@ -56,7 +56,7 @@ public sealed class DiscordUtilsTests
         string message = "abcdef";
 
         // Act
-        string[] chunks = DiscordUtils.SplitMessageIntoChunks(message, 3).Value;
+        string[] chunks = Utilities.SplitMessageIntoChunks(message, 3).Value;
 
         // Assert
         chunks.ShouldBe(["abc", "def"]);
@@ -68,7 +68,7 @@ public sealed class DiscordUtilsTests
         // Arrange
 
         // Act
-        ErrorOr<string[]> result = DiscordUtils.SplitMessageIntoChunks("message", 0);
+        ErrorOr<string[]> result = Utilities.SplitMessageIntoChunks("message", 0);
 
         // Assert
         result.IsError.ShouldBeTrue();

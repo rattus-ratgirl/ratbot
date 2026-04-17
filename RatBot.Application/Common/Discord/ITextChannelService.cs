@@ -1,6 +1,6 @@
 namespace RatBot.Application.Common.Discord;
 
-public interface IDiscordChannelService
+public interface ITextChannelService
 {
     Task<ErrorOr<ResolvedTextChannel>> GetTextChannelAsync(ulong channelId);
     Task<ErrorOr<Success>> ValidateBotCanSendAsync(ulong channelId);

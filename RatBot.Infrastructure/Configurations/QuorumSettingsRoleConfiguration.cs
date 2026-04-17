@@ -15,7 +15,7 @@ public sealed class QuorumSettingsRoleConfiguration : IEntityTypeConfiguration<R
         builder.Property<QuorumSettingsType>("TargetType").HasColumnType("integer");
         builder.Property<ulong>("TargetId").HasColumnType("bigint").HasConversion<long>();
 
-        builder.Property(x => x.Id).HasColumnType("bigint").HasConversion<SnowflakeValueConverter<RoleSnowflake>>();
+        builder.Property(x => x.Id).HasColumnName("RoleId").HasColumnType("bigint").HasConversion<long>();
 
         builder.HasKey("GuildId", "TargetType", "TargetId", "Id");
 

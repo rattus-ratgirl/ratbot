@@ -10,9 +10,12 @@ public sealed class AdminModule(AdminSendService adminSendService) : Interaction
 
     [SlashCommand("send", "Send a multiline message as the bot to a specific channel.")]
     [RequireUserPermission(GuildPermission.Administrator)]
-    public async Task SendAsync(ITextChannel channel)
+    public async Task SendAsync(ITextChannel? channel)
     {
         IGuildUser currentUser = await Context.Guild.GetCurrentUserAsync();
+
+        channel ??= Context.Channel as ITextChannel;
+
         ChannelPermissions permissions = currentUser.GetPermissions(channel);
 
         if (!permissions.ViewChannel || !permissions.SendMessages)
@@ -21,7 +24,7 @@ public sealed class AdminModule(AdminSendService adminSendService) : Interaction
             return;
         }
 
-        string customId = $"{SendModalCustomIdPrefix}:{Context.User.Id}:{channel.Id}";
+        string customId = $"{SendModalCustomIdPrefix}:{Context.User.Id}:{channel!.Id}";
 
         await Context.Interaction.RespondWithModalAsync<AdminSendModal>(customId);
     }
@@ -51,7 +54,7 @@ public sealed class AdminModule(AdminSendService adminSendService) : Interaction
     {
         await DeferAsync(true);
 
-        return await adminSendService.SendAsync(new DiscordGuildChannelService(Context.Guild), channelId, message);
+        return await adminSendService.SendAsync(new TextChannelService(Context.Guild), channelId, message);
     }
 
     private Task RespondEphemeralAsync(string message) =>

@@ -3,7 +3,7 @@ using RatBot.Application.Features.Administration;
 
 namespace RatBot.Interactions.Modules.Admin;
 
-public sealed class DiscordGuildChannelService(IGuild guild) : IDiscordChannelService
+public sealed class TextChannelService(IGuild guild) : ITextChannelService
 {
     public async Task<ErrorOr<ResolvedTextChannel>> GetTextChannelAsync(ulong channelId)
     {

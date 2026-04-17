@@ -13,8 +13,43 @@ public sealed class MetaSuggestionService(
 {
     private readonly ILogger _logger = logger.ForContext<MetaSuggestionService>();
 
+    private static string FormatThreadTitle(long suggestionId, string title) =>
+        $"#{suggestionId:D3} - {title}";
+
+    private static string BuildFirstPost(MetaSuggestion suggestion) =>
+        $"""
+         ## Author
+         <@{suggestion.AuthorUserId}>
+         ## Date
+         <t:{suggestion.SubmittedAtUtc.ToUnixTimeSeconds()}:F>
+         ## Anonymity
+         {ToAnonymityString(suggestion.Anonymity)}
+         ## Summary
+         {suggestion.Summary}
+         """;
+
+    private static string BuildSecondPost(MetaSuggestion suggestion) =>
+        $"""
+         ## Motivation
+         {suggestion.Motivation}
+         """;
+
+    private static string BuildThirdPost(MetaSuggestion suggestion) =>
+        $"""
+          ## Specification
+          {suggestion.Specification}
+          """;
+
+    private static string ToAnonymityString(MetaSuggestionAnonymity anonymity) =>
+        anonymity switch
+        {
+            MetaSuggestionAnonymity.Anonymous => "anonymous",
+            MetaSuggestionAnonymity.Public => "public",
+            _ => throw new ArgumentOutOfRangeException(nameof(anonymity), anonymity, null)
+        };
+
     public async Task<ErrorOr<Success>> SubmitAsync(
-        IDiscordMetaSuggestionForumService forumService,
+        IMetaSuggestionForumService forumService,
         MetaSuggestionDraft draft,
         MetaSuggestionAnonymity anonymity,
         CancellationToken ct = default)
@@ -92,7 +127,7 @@ public sealed class MetaSuggestionService(
 
         ErrorOr<Success> linkageResult = await suggestionRepository.AttachThreadLinkageAsync(
             persisted.Id,
-            new ChannelSnowflake(createdThread.ThreadChannelId),
+            createdThread.ThreadChannelId,
             ct);
 
         if (linkageResult.IsError)
@@ -111,39 +146,4 @@ public sealed class MetaSuggestionService(
 
         return Result.Success;
     }
-
-    private static string FormatThreadTitle(long suggestionId, string title) =>
-        $"#{suggestionId:D3} - {title}";
-
-    private static string BuildFirstPost(MetaSuggestion suggestion) =>
-        $"""
-         ## Author
-         <@{suggestion.AuthorUserId}>
-         ## Date
-         <t:{suggestion.SubmittedAtUtc.ToUnixTimeSeconds()}:F>
-         ## Anonymity
-         {ToAnonymityString(suggestion.Anonymity)}
-         ## Summary
-         {suggestion.Summary}
-         """;
-
-    private static string BuildSecondPost(MetaSuggestion suggestion) =>
-        $"""
-         ## Motivation
-         {suggestion.Motivation}
-         """;
-
-    private static string BuildThirdPost(MetaSuggestion suggestion) =>
-        $"""
-          ## Specification
-          {suggestion.Specification}
-          """;
-
-    private static string ToAnonymityString(MetaSuggestionAnonymity anonymity) =>
-        anonymity switch
-        {
-            MetaSuggestionAnonymity.Anonymous => "anonymous",
-            MetaSuggestionAnonymity.Public => "public",
-            _ => throw new ArgumentOutOfRangeException(nameof(anonymity), anonymity, null)
-        };
 }

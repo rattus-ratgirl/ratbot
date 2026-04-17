@@ -1,0 +1,43 @@
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using RatBot.Domain.Features.Moderation;
+using RatBot.Domain.Primitives;
+using RatBot.Infrastructure.Converters;
+
+namespace RatBot.Infrastructure.Configurations;
+
+public class AutobannedUserConfiguration : IEntityTypeConfiguration<AutobannedUser>
+{
+    public void Configure(EntityTypeBuilder<AutobannedUser> builder)
+    {
+        builder.ToTable("AutobannedUsers");
+
+        builder.HasKey(x => new { x.GuildId, x.BannedUser });
+
+        builder
+            .Property(x => x.GuildId)
+            .IsRequired()
+            .HasConversion<SnowflakeValueConverter<GuildSnowflake>>()
+            .HasColumnType("bigint");
+
+        builder
+            .Property(x => x.BannedUser)
+            .IsRequired()
+            .HasConversion<SnowflakeValueConverter<UserSnowflake>>()
+            .HasColumnType("bigint");
+
+        builder
+            .Property(x => x.Moderator)
+            .IsRequired()
+            .HasConversion<SnowflakeValueConverter<UserSnowflake>>()
+            .HasColumnType("bigint");
+
+        builder
+            .Property(x => x.RegisteredAtUtc)
+            .IsRequired()
+            .HasColumnType("timestamp with time zone");
+
+        builder.HasIndex(x => x.BannedUser);
+        builder.HasIndex(x => x.Moderator);
+        builder.HasIndex(x => x.GuildId);
+    }
+}
