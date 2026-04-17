@@ -1,4 +1,4 @@
-namespace RatBot.Application.Features.AdminSend;
+namespace RatBot.Application.Features.Administration;
 
 public static class AdminSendErrors
 {

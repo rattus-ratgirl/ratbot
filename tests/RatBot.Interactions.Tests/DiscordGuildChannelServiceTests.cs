@@ -1,7 +1,7 @@
 using Discord;
 using ErrorOr;
 using NSubstitute;
-using RatBot.Application.Features.AdminSend;
+using RatBot.Application.Features.Administration;
 using RatBot.Interactions.Modules.Admin;
 using Shouldly;
 

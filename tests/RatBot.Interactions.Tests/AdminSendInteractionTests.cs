@@ -3,7 +3,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using RatBot.Application.Features.AdminSend;
+using RatBot.Application.Features.Administration;
 using RatBot.Interactions.Modules.Admin;
 
 namespace RatBot.Interactions.Tests;

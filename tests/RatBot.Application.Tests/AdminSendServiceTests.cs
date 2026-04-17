@@ -1,7 +1,7 @@
 using ErrorOr;
 using NSubstitute;
 using RatBot.Application.Common.Discord;
-using RatBot.Application.Features.AdminSend;
+using RatBot.Application.Features.Administration;
 using Shouldly;
 
 namespace RatBot.Application.Tests;

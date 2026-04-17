@@ -1,6 +1,6 @@
 using RatBot.Application.Common.Discord;
 
-namespace RatBot.Application.Features.AdminSend;
+namespace RatBot.Application.Features.Administration;
 
 public sealed class AdminSendService
 {
