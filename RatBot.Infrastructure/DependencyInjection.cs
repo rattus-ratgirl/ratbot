@@ -22,9 +22,8 @@ public static class DependencyInjection
             services.AddDbContext<BotDbContext>(options => options.UseNpgsql(connectionString));
             services.AddDbContextFactory<BotDbContext>(options => options.UseNpgsql(connectionString));
 
-            services.AddScoped<IBotDataContext>(sp => sp.GetRequiredService<BotDbContext>());
-
             services.AddSingleton<IRpsGameStore, RpsGameStore>();
+
             services.AddScoped<IMetaSuggestionRepository, MetaSuggestionRepository>();
             services.AddScoped<IMetaSuggestionSettingsRepository, MetaSuggestionSettingsRepository>();
             services.AddScoped<IQuorumSettingsRepository, QuorumSettingsRepository>();
