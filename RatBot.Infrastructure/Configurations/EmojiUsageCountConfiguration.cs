@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using RatBot.Domain.Features.Emoji;
 
 namespace RatBot.Infrastructure.Configurations;
 

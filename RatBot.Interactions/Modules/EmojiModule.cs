@@ -1,5 +1,6 @@
 using System.Text;
 using RatBot.Application.Features.Emoji;
+using RatBot.Domain.Features.Emoji;
 
 namespace RatBot.Interactions.Modules;
 

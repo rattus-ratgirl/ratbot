@@ -1,4 +1,4 @@
-namespace RatBot.Application.Features.Emoji;
+namespace RatBot.Domain.Features.Emoji;
 
 /// <summary>
 ///     Represents persisted usage metrics for an emoji.

@@ -1,12 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RatBot.Application.Features.Meta;
+using RatBot.Application.Features.Emoji;
 using RatBot.Application.Features.Meta.Interfaces;
 using RatBot.Application.Features.Quorum;
 using RatBot.Application.Features.Rps;
 using RatBot.Infrastructure.Data;
 using RatBot.Infrastructure.Persistence;
-using RatBot.Infrastructure.Settings;
 using RatBot.Infrastructure.Settings.Meta;
 using RatBot.Infrastructure.Settings.Quorum;
 
@@ -29,6 +28,7 @@ public static class DependencyInjection
             services.AddScoped<IMetaSuggestionRepository, MetaSuggestionRepository>();
             services.AddScoped<IMetaSuggestionSettingsRepository, MetaSuggestionSettingsRepository>();
             services.AddScoped<IQuorumSettingsRepository, QuorumSettingsRepository>();
+            services.AddScoped<IEmojiRepository, EmojiRepository>();
         }
     }
 }

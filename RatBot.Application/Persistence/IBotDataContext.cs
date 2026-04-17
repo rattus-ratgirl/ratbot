@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using RatBot.Domain.Features.Emoji;
 
 namespace RatBot.Application.Persistence;
 
