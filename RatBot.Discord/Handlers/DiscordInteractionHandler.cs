@@ -5,6 +5,7 @@ using Discord.Net;
 using Microsoft.Extensions.Options;
 using RatBot.Discord.Commands.Hello;
 using RatBot.Discord.Configuration;
+using RatBot.Discord.Gateway;
 using IResult = Discord.Interactions.IResult;
 
 namespace RatBot.Discord.Handlers;
@@ -15,7 +16,7 @@ public sealed class DiscordInteractionHandler(
     IServiceProvider services,
     IOptions<DiscordOptions> options,
     IConfiguration configuration,
-    ILogger logger)
+    ILogger logger) : IDiscordGatewayHandler
 {
     private const string DiagEventName = "interaction_diagnostics";
     private readonly ConcurrentDictionary<ulong, Stopwatch> _interactionStopwatches = [];

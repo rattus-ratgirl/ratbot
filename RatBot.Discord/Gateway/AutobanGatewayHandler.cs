@@ -6,9 +6,15 @@ namespace RatBot.Discord.Gateway;
 public sealed class AutobanGatewayHandler(
     DiscordSocketClient discordClient,
     IServiceScopeFactory scopeFactory,
-    ILogger logger)
+    ILogger logger) : IDiscordGatewayHandler
 {
     private readonly ILogger _logger = logger.ForContext<AutobanGatewayHandler>();
+
+    public Task InitializeAsync(CancellationToken ct)
+    {
+        Subscribe();
+        return Task.CompletedTask;
+    }
 
     public void Subscribe() => discordClient.UserJoined += HandleUserJoinedAsync;
 

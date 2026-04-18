@@ -1,33 +1,29 @@
 using Microsoft.Extensions.Options;
 using RatBot.Discord.Configuration;
 using RatBot.Discord.Gateway;
-using RatBot.Discord.Handlers;
 using Serilog.Events;
 
 namespace RatBot.Discord.Hosting;
 
 public sealed class DiscordBotHostedService : IHostedService
 {
-    private readonly AutobanGatewayHandler _autobanGatewayHandler;
     private readonly DiscordSocketClient _discordClient;
-    private readonly EmojiReactionGatewayHandler _emojiReactionHandler;
-    private readonly DiscordInteractionHandler _interactionHandler;
+    private readonly IEnumerable<IDiscordGatewayHandler> _gatewayHandlers;
+    private readonly GuildMemberCacheService _guildMemberCacheService;
     private readonly ILogger _logger;
     private readonly DiscordOptions _options;
 
     public DiscordBotHostedService(
         DiscordSocketClient discordClient,
         InteractionService interactionService,
-        DiscordInteractionHandler interactionHandler,
-        AutobanGatewayHandler autobanGatewayHandler,
-        EmojiReactionGatewayHandler emojiReactionHandler,
+        IEnumerable<IDiscordGatewayHandler> gatewayHandlers,
+        GuildMemberCacheService guildMemberCacheService,
         IOptions<DiscordOptions> options,
         ILogger logger)
     {
         _discordClient = discordClient;
-        _interactionHandler = interactionHandler;
-        _autobanGatewayHandler = autobanGatewayHandler;
-        _emojiReactionHandler = emojiReactionHandler;
+        _gatewayHandlers = gatewayHandlers;
+        _guildMemberCacheService = guildMemberCacheService;
         _options = options.Value;
         _logger = logger.ForContext<DiscordBotHostedService>();
 
@@ -48,10 +44,11 @@ public sealed class DiscordBotHostedService : IHostedService
     {
         _discordClient.Connected += OnConnectedAsync;
         _discordClient.Disconnected += OnDisconnectedAsync;
+        _discordClient.GuildAvailable += OnGuildAvailableAsync;
+        _discordClient.GuildMembersDownloaded += OnGuildMembersDownloadedAsync;
 
-        await _interactionHandler.InitializeAsync(cancellationToken);
-        _autobanGatewayHandler.Subscribe();
-        _emojiReactionHandler.Subscribe();
+        foreach (IDiscordGatewayHandler handler in _gatewayHandlers)
+            await handler.InitializeAsync(cancellationToken);
 
         await _discordClient.LoginAsync(TokenType.Bot, _options.Token);
         await _discordClient.StartAsync();
@@ -59,12 +56,13 @@ public sealed class DiscordBotHostedService : IHostedService
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        _emojiReactionHandler.Unsubscribe();
-        _autobanGatewayHandler.Unsubscribe();
-        _interactionHandler.Unsubscribe();
+        foreach (IDiscordGatewayHandler handler in _gatewayHandlers.Reverse())
+            handler.Unsubscribe();
 
         _discordClient.Connected -= OnConnectedAsync;
         _discordClient.Disconnected -= OnDisconnectedAsync;
+        _discordClient.GuildAvailable -= OnGuildAvailableAsync;
+        _discordClient.GuildMembersDownloaded -= OnGuildMembersDownloadedAsync;
 
         await _discordClient.StopAsync();
         await _discordClient.LogoutAsync();
@@ -82,6 +80,31 @@ public sealed class DiscordBotHostedService : IHostedService
             _logger.Warning("Gateway disconnected.");
         else
             _logger.Warning(exception, "Gateway disconnected with error.");
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnGuildAvailableAsync(SocketGuild guild)
+    {
+        if (guild.Id != _options.GuildId)
+            return Task.CompletedTask;
+
+        _ = _guildMemberCacheService.EnsureGuildMembersDownloadedAsync(guild, "guild_available");
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnGuildMembersDownloadedAsync(SocketGuild guild)
+    {
+        if (guild.Id != _options.GuildId)
+            return Task.CompletedTask;
+
+        _logger.Information(
+            "Guild member cache populated. GuildId={GuildId}, DownloadedMemberCount={DownloadedMemberCount}, MemberCount={MemberCount}, HasAllMembers={HasAllMembers}",
+            guild.Id,
+            guild.DownloadedMemberCount,
+            guild.MemberCount,
+            guild.HasAllMembers);
 
         return Task.CompletedTask;
     }

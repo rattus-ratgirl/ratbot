@@ -45,14 +45,19 @@ public static class DependencyInjection
                 new InteractionServiceConfig { AutoServiceScopes = true }));
 
             services.AddSingleton<DiscordInteractionHandler>();
+            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<DiscordInteractionHandler>());
             services.AddSingleton<AutobanGatewayHandler>();
+            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<AutobanGatewayHandler>());
             services.AddSingleton<EmojiReactionGatewayHandler>();
+            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<EmojiReactionGatewayHandler>());
+            services.AddSingleton<GuildMemberCacheService>();
             services.AddSingleton<MetaSuggestionPendingStore>();
 
             services.AddSingleton<DiscordMetaSuggestionForumServiceFactory>(_ =>
                 guild => new MetaSuggestionForumService(guild));
 
             services.AddHostedService<DiscordBotHostedService>();
+            services.AddHostedService<GuildMemberCacheBackgroundWorker>();
             services.AddHostedService<EmojiAnalyticsBackgroundWorker>();
         }
     }

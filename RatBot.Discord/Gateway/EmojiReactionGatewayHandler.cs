@@ -5,9 +5,15 @@ namespace RatBot.Discord.Gateway;
 public sealed class EmojiReactionGatewayHandler(
     DiscordSocketClient discordClient,
     EmojiAnalyticsBuffer buffer,
-    ILogger logger)
+    ILogger logger) : IDiscordGatewayHandler
 {
     private readonly ILogger _logger = logger.ForContext<EmojiReactionGatewayHandler>();
+
+    public Task InitializeAsync(CancellationToken ct)
+    {
+        Subscribe();
+        return Task.CompletedTask;
+    }
 
     public void Subscribe()
     {

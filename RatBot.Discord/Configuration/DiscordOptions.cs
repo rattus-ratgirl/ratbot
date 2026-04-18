@@ -11,4 +11,6 @@ public sealed class DiscordOptions
     [Range(1, ulong.MaxValue)] public ulong GuildId { get; init; }
 
     [Range(1000, 50000)] public int MessageCacheSize { get; init; } = 5000;
+
+    [Range(5, 1440)] public int MemberCacheRefreshIntervalMinutes { get; init; } = 30;
 }
