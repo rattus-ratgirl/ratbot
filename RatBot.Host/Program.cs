@@ -36,7 +36,7 @@ public static class Program
             .WithProperty(
                 "environment",
                 config["OTEL:Resource:Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "production")
-            .WriteTo.Console(LogEventLevel.Information)
+            .WriteTo.Console(LogEventLevel.Debug)
             .WriteTo
             .File(
                 "logs/verbose-.log",

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using Discord.Net;
@@ -17,6 +18,7 @@ public sealed class DiscordInteractionHandler(
     ILogger logger)
 {
     private const string DiagEventName = "interaction_diagnostics";
+    private readonly ConcurrentDictionary<ulong, Stopwatch> _interactionStopwatches = [];
     private readonly ILogger _logger = logger.ForContext<DiscordInteractionHandler>();
 
     private readonly DiscordOptions _options = options.Value;
@@ -148,12 +150,14 @@ public sealed class DiscordInteractionHandler(
 
         discordClient.InteractionCreated += HandleInteractionAsync;
         discordClient.Ready += RegisterCommandsAsync;
+        interactionService.InteractionExecuted += HandleInteractionExecutedAsync;
     }
 
     public void Unsubscribe()
     {
         discordClient.InteractionCreated -= HandleInteractionAsync;
         discordClient.Ready -= RegisterCommandsAsync;
+        interactionService.InteractionExecuted -= HandleInteractionExecutedAsync;
     }
 
     private async Task RegisterCommandsAsync()
@@ -183,6 +187,7 @@ public sealed class DiscordInteractionHandler(
         try
         {
             IInteractionContext context = new SocketInteractionContext(discordClient, interaction);
+            _interactionStopwatches[interaction.Id] = totalStopwatch;
 
             interactionLogger = interactionLogger
                 .ForContext("user_id", context.User.Id)
@@ -196,9 +201,9 @@ public sealed class DiscordInteractionHandler(
 
             if (result.IsSuccess)
             {
-                interactionLogger.Information(
-                    "interaction_diag diag_stage={DiagStage} diag_outcome={DiagOutcome} total_ms={TotalMs} has_responded={HasResponded}",
-                    "execute",
+                interactionLogger.Debug(
+                    "interaction_diag diag_stage={DiagStage} diag_outcome={DiagOutcome} dispatch_ms={DispatchMs} has_responded={HasResponded}",
+                    "dispatch",
                     "success",
                     Math.Round(totalStopwatch.Elapsed.TotalMilliseconds, 2),
                     interaction.HasResponded);
@@ -208,10 +213,12 @@ public sealed class DiscordInteractionHandler(
 
             interactionLogger.Warning(
                 "interaction_diag diag_stage={DiagStage} diag_outcome={DiagOutcome} command_error={CommandError} command_reason={CommandReason}",
-                "execute",
+                "dispatch",
                 "failed",
                 result.Error?.ToString() ?? "None",
                 result.ErrorReason ?? string.Empty);
+
+            _interactionStopwatches.TryRemove(interaction.Id, out _);
 
             string reason = string.IsNullOrWhiteSpace(result.ErrorReason)
                 ? "Command execution failed."
@@ -224,14 +231,17 @@ public sealed class DiscordInteractionHandler(
         }
         catch (HttpException ex) when (ex.DiscordCode == (DiscordErrorCode)10062)
         {
+            _interactionStopwatches.TryRemove(interaction.Id, out _);
             interactionLogger.Warning(ex, "Unknown interaction received by dispatch pipeline.");
         }
         catch (HttpException ex) when (ex.DiscordCode == (DiscordErrorCode)40060)
         {
+            _interactionStopwatches.TryRemove(interaction.Id, out _);
             interactionLogger.Information(ex, "Interaction was already acknowledged.");
         }
         catch (Exception ex)
         {
+            _interactionStopwatches.TryRemove(interaction.Id, out _);
             interactionLogger.Error(ex, "Unhandled exception executing interaction.");
 
             try
@@ -248,7 +258,117 @@ public sealed class DiscordInteractionHandler(
         }
     }
 
-    private static void LogCommandUsage(ILogger interactionLogger, IInteractionContext context, SocketInteraction interaction)
+    private async Task HandleInteractionExecutedAsync(
+        ICommandInfo command,
+        IInteractionContext context,
+        IResult result)
+    {
+        _interactionStopwatches.TryRemove(context.Interaction.Id, out Stopwatch? stopwatch);
+
+        double? totalMs = stopwatch is null
+            ? null
+            : Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2);
+
+        ILogger interactionLogger = CreateInteractionDiagnosticsLogger(context)
+            .ForContext("diag_component", "interaction_execution")
+            .ForContext("command_module", command.Module.Name)
+            .ForContext("command_group", command.Module.SlashGroupName)
+            .ForContext("command_name", command.Name)
+            .ForContext("command_method", command.MethodName)
+            .ForContext("command_run_mode", command.RunMode.ToString())
+            .ForContext("user_id", context.User.Id)
+            .ForContext("guild_id", context.Guild?.Id)
+            .ForContext("channel_id", context.Channel?.Id);
+
+        Exception? exception = result is ExecuteResult executeResult
+            ? executeResult.Exception
+            : null;
+
+        if (result.IsSuccess)
+        {
+            interactionLogger.Debug(
+                "interaction_diag diag_stage={DiagStage} diag_outcome={DiagOutcome} total_ms={TotalMs} has_responded={HasResponded}",
+                "execute_complete",
+                "success",
+                totalMs,
+                context.Interaction.HasResponded);
+
+            return;
+        }
+
+        if (exception is not null)
+        {
+            interactionLogger.Error(
+                exception,
+                "interaction_diag diag_stage={DiagStage} diag_outcome={DiagOutcome} total_ms={TotalMs} has_responded={HasResponded} command_error={CommandError} command_reason={CommandReason}",
+                "execute_complete",
+                "failed",
+                totalMs,
+                context.Interaction.HasResponded,
+                result.Error?.ToString() ?? "None",
+                result.ErrorReason ?? string.Empty);
+
+            await TryRespondToUnmetPreconditionAsync(context, result, interactionLogger);
+            return;
+        }
+
+        interactionLogger.Warning(
+            "interaction_diag diag_stage={DiagStage} diag_outcome={DiagOutcome} total_ms={TotalMs} has_responded={HasResponded} command_error={CommandError} command_reason={CommandReason}",
+            "execute_complete",
+            "failed",
+            totalMs,
+            context.Interaction.HasResponded,
+            result.Error?.ToString() ?? "None",
+            result.ErrorReason ?? string.Empty);
+
+        await TryRespondToUnmetPreconditionAsync(context, result, interactionLogger);
+    }
+
+    private async static Task TryRespondToUnmetPreconditionAsync(
+        IInteractionContext context,
+        IResult result,
+        ILogger interactionLogger)
+    {
+        if (result.Error != InteractionCommandError.UnmetPrecondition)
+            return;
+
+        if (context.Interaction.HasResponded)
+            return;
+
+        string reason = string.IsNullOrWhiteSpace(result.ErrorReason)
+            ? "Command precondition failed."
+            : result.ErrorReason;
+
+        try
+        {
+            await context.Interaction.RespondAsync($"Command failed: {reason}", ephemeral: true);
+
+            interactionLogger.Debug(
+                "interaction_diag diag_stage={DiagStage} diag_outcome={DiagOutcome} has_responded={HasResponded}",
+                "precondition_response",
+                "success",
+                context.Interaction.HasResponded);
+        }
+        catch (HttpException ex) when (ex.DiscordCode == (DiscordErrorCode)10062)
+        {
+            interactionLogger.Warning(ex, "Unknown interaction while responding to unmet precondition.");
+        }
+        catch (HttpException ex) when (ex.DiscordCode == (DiscordErrorCode)40060)
+        {
+            interactionLogger.Information(
+                ex,
+                "Interaction was already acknowledged while responding to unmet precondition.");
+        }
+        catch (Exception ex)
+        {
+            interactionLogger.Warning(ex, "Failed to send unmet precondition response.");
+        }
+    }
+
+    private static void LogCommandUsage(
+        ILogger interactionLogger,
+        IInteractionContext context,
+        SocketInteraction interaction)
     {
         CommandUsageDetails usage = GetCommandUsageDetails(interaction);
 
@@ -259,61 +379,76 @@ public sealed class DiscordInteractionHandler(
             .ForContext("invokee_user_id", usage.InvokeeUserId)
             .ForContext("invokee_username", usage.InvokeeUsername)
             .ForContext("invokee_source", usage.InvokeeSource)
-            .Information("Command Invoked");
+            .Debug("Command invoked");
     }
 
     private void LogRegisteredInteractionCommands()
     {
         ModuleInfo[] modules = EnumerateModules(interactionService.Modules).ToArray();
-        RegisteredModuleDetails[] moduleDetails = modules
-            .Select(module => new RegisteredModuleDetails(
+
+        var moduleDetails = modules
+            .Select(module => new
+            {
                 module.Name,
                 module.SlashGroupName,
-                module.SlashCommands.Count,
-                module.ContextCommands.Count,
-                module.ComponentCommands.Count,
-                module.ModalCommands.Count))
+                SlashCommandCount = module.SlashCommands.Count,
+                ContextCommandCount = module.ContextCommands.Count,
+                ComponentCommandCount = module.ComponentCommands.Count,
+                ModalCommandCount = module.ModalCommands.Count
+            })
             .ToArray();
 
-        List<RegisteredCommandDetails> commandDetails = [];
+        List<object> commandDetails = [];
 
         foreach (ModuleInfo module in modules)
         {
-            commandDetails.AddRange(module.SlashCommands.Select(command => new RegisteredCommandDetails(
-                "Slash",
-                module.Name,
-                module.SlashGroupName,
-                command.Name,
-                command.MethodName,
-                null,
-                null)));
+            commandDetails.AddRange(
+                module.SlashCommands.Select(command => new
+                {
+                    Type = "Slash",
+                    Module = module.Name,
+                    SlashGroup = module.SlashGroupName,
+                    command.Name,
+                    Method = command.MethodName,
+                    SupportsWildCards = (bool?)null,
+                    ModalType = (string?)null
+                }));
 
-            commandDetails.AddRange(module.ContextCommands.Select(command => new RegisteredCommandDetails(
-                "Context",
-                module.Name,
-                null,
-                command.Name,
-                command.MethodName,
-                null,
-                null)));
+            commandDetails.AddRange(
+                module.ContextCommands.Select(command => new
+                {
+                    Type = "Context",
+                    Module = module.Name,
+                    SlashGroup = (string?)null,
+                    command.Name,
+                    Method = command.MethodName,
+                    SupportsWildCards = (bool?)null,
+                    ModalType = (string?)null
+                }));
 
-            commandDetails.AddRange(module.ComponentCommands.Select(command => new RegisteredCommandDetails(
-                "Component",
-                module.Name,
-                null,
-                command.Name,
-                command.MethodName,
-                command.SupportsWildCards,
-                null)));
+            commandDetails.AddRange(
+                module.ComponentCommands.Select(command => new
+                {
+                    Type = "Component",
+                    Module = module.Name,
+                    SlashGroup = (string?)null,
+                    command.Name,
+                    Method = command.MethodName,
+                    SupportsWildCards = (bool?)command.SupportsWildCards,
+                    ModalType = (string?)null
+                }));
 
-            commandDetails.AddRange(module.ModalCommands.Select(command => new RegisteredCommandDetails(
-                "Modal",
-                module.Name,
-                null,
-                command.Name,
-                command.MethodName,
-                command.SupportsWildCards,
-                command.Modal.Type.FullName)));
+            commandDetails.AddRange(
+                module.ModalCommands.Select(command => new
+                {
+                    Type = "Modal",
+                    Module = module.Name,
+                    SlashGroup = (string?)null,
+                    command.Name,
+                    Method = command.MethodName,
+                    SupportsWildCards = (bool?)command.SupportsWildCards,
+                    ModalType = command.Modal.Type.FullName
+                }));
         }
 
         _logger.Information(
@@ -340,26 +475,25 @@ public sealed class DiscordInteractionHandler(
             .ForContext("interaction_name", GetInteractionName(interaction))
             .ForContext("interaction_created_at_utc", interaction.CreatedAt.UtcDateTime.ToString("O"));
 
+    private ILogger CreateInteractionDiagnosticsLogger(IInteractionContext context)
+    {
+        ILogger interactionLogger = _logger
+            .ForContext("diag_event", DiagEventName)
+            .ForContext("service_instance_id", _serviceInstanceId)
+            .ForContext("process_id", Environment.ProcessId)
+            .ForContext("interaction_id", context.Interaction.Id)
+            .ForContext("interaction_type", context.Interaction.Type.ToString());
+
+        return context.Interaction is SocketInteraction socketInteraction
+            ? interactionLogger
+                .ForContext("interaction_name", GetInteractionName(socketInteraction))
+                .ForContext("interaction_created_at_utc", socketInteraction.CreatedAt.UtcDateTime.ToString("O"))
+            : interactionLogger;
+    }
+
     private readonly record struct CommandUsageDetails(
         string CommandName,
         ulong? InvokeeUserId,
         string? InvokeeUsername,
         string? InvokeeSource);
-
-    private readonly record struct RegisteredModuleDetails(
-        string Name,
-        string? SlashGroupName,
-        int SlashCommandCount,
-        int ContextCommandCount,
-        int ComponentCommandCount,
-        int ModalCommandCount);
-
-    private readonly record struct RegisteredCommandDetails(
-        string Type,
-        string Module,
-        string? SlashGroup,
-        string Name,
-        string Method,
-        bool? SupportsWildCards,
-        string? ModalType);
 }
