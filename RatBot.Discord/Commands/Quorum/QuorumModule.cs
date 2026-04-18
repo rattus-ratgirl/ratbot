@@ -12,7 +12,6 @@ public sealed class QuorumModule(ILogger logger, QuorumSettingsService quorumSet
             : error.Description;
 
     [SlashCommand("count", "Count the number of members needed for quorum.")]
-    [RequireUserPermission(GuildPermission.SendPolls)]
     public async Task CountAsync()
     {
         if (Context.Channel is not ITextChannel currentChannel)
@@ -29,13 +28,13 @@ public sealed class QuorumModule(ILogger logger, QuorumSettingsService quorumSet
             category?.Id);
 
         await configResult.SwitchFirstAsync(
-            async config => await RespondWithQuorumCountAsync(config),
+            async config => await RespondAsync(GetQuorumCount(config), ephemeral: false),
             async error => await RespondAsync(DescribeError(error), ephemeral: true));
     }
 
-    private async Task RespondWithQuorumCountAsync(QuorumSettings config)
+    private string GetQuorumCount(QuorumSettings config)
     {
-        logger.Debug("Quorum settings: {Config}", config);
+        _logger.Debug("Quorum settings: {Config}", config);
 
         SocketGuild guild = Context.Guild!;
 
@@ -43,19 +42,33 @@ public sealed class QuorumModule(ILogger logger, QuorumSettingsService quorumSet
             .Roles
             .Select(role => guild.GetRole(role.Id))
             .Where(role => role is not null)
-            .ToArray()!;
+            .ToArray();
 
-        HashSet<ulong> usersWithRoles = roles.SelectMany(x => x.Members).Select(y => y.Id).ToHashSet();
+        HashSet<ulong> usersWithRoles = roles
+            .SelectMany(role => role.Members)
+            .Select(user => user.Id)
+            .ToHashSet();
+
+        if (!guild.HasAllMembers)
+        {
+            _logger.Warning(
+                "Quorum count is using an incomplete guild member cache. GuildId={GuildId}, DownloadedMemberCount={DownloadedMemberCount}, MemberCount={MemberCount}",
+                guild.Id,
+                guild.DownloadedMemberCount,
+                guild.MemberCount);
+        }
 
         int quorumCount = QuorumCalculator.CalculateRequiredMemberCount(usersWithRoles.Count, config.QuorumProportion);
 
         _logger.Debug(
-            "Members with roles {RolesIds}: {UsersWithRoles}, quorum count: {QuorumCount}, proportion: {ConfigQuorumProportion}",
-            config.Roles.Select(x => x.Id),
+            "Members with roles {RolesIds}: {UsersWithRoles}, cached guild members: {DownloadedMemberCount}/{MemberCount}, quorum count: {QuorumCount}, proportion: {ConfigQuorumProportion}",
+            roles.Select(role => role.Id),
             usersWithRoles,
+            guild.DownloadedMemberCount,
+            guild.MemberCount,
             quorumCount,
             config.QuorumProportion);
 
-        await RespondAsync("Quorum count for this channel: " + quorumCount);
+        return $"{quorumCount} votes are needed for quorum.";
     }
 }

@@ -118,6 +118,13 @@ public sealed class QuorumSettingsService(IQuorumSettingsRepository repository, 
             : await repository.GetAsync(guildId, QuorumSettingsType.Category, categoryId.Value);
     }
 
+    public Task<ErrorOr<QuorumSettings>> GetAsync(
+        ulong guildId,
+        QuorumSettingsType targetType,
+        ulong targetId,
+        CancellationToken ct = default) =>
+        repository.GetAsync(guildId, targetType, targetId);
+
     private sealed record ValidatedQuorumSettingsInput(
         ulong GuildId,
         QuorumSettingsType TargetType,
