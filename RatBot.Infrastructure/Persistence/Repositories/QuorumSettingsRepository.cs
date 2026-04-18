@@ -1,8 +1,5 @@
-using System.Collections.Immutable;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using RatBot.Application.Quorum;
 using RatBot.Infrastructure.Data;
-using RatBot.Infrastructure.Persistence.Models;
 
 namespace RatBot.Infrastructure.Persistence.Repositories;
 
@@ -12,6 +9,7 @@ public sealed class QuorumSettingsRepository(BotDbContext dbContext) : IQuorumSe
     {
         QuorumSettings? config = await dbContext
             .Set<QuorumSettings>()
+            .Include(config => config.Roles)
             .AsNoTracking()
             .SingleOrDefaultAsync(config =>
                 config.GuildId == guildId && config.TargetType == targetType && config.TargetId == targetId);
@@ -19,14 +17,7 @@ public sealed class QuorumSettingsRepository(BotDbContext dbContext) : IQuorumSe
         if (config is null)
             return Error.NotFound(description: "Quorum settings not found");
 
-        ulong[] roleIds = await dbContext
-            .Set<QuorumSettingsRole>()
-            .AsNoTracking()
-            .Where(role => role.Id == targetId)
-            .Select(role => role.Id)
-            .ToArrayAsync();
-
-        return config.Reconfigure(roleIds, config.QuorumProportion);
+        return config;
     }
 
     public async Task<ErrorOr<Success>> UpsertAsync(QuorumSettings config)
@@ -39,8 +30,11 @@ public sealed class QuorumSettingsRepository(BotDbContext dbContext) : IQuorumSe
                 && existing.TargetId == config.TargetId);
 
         if (!exists)
+        {
             dbContext.Add(config);
+        }
         else
+        {
             await dbContext
                 .Set<QuorumSettings>()
                 .Where(existing =>
@@ -49,22 +43,15 @@ public sealed class QuorumSettingsRepository(BotDbContext dbContext) : IQuorumSe
                     && existing.TargetId == config.TargetId)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.QuorumProportion, config.QuorumProportion));
 
-        await dbContext
-            .Set<QuorumSettingsRole>()
-            .Where(role =>
-                EF.Property<ulong>(role, "GuildId") == config.GuildId
-                && EF.Property<QuorumSettingsType>(role, "TargetType") == config.TargetType
-                && EF.Property<ulong>(role, "TargetId") == config.TargetId)
-            .ExecuteDeleteAsync();
+            await dbContext
+                .Set<QuorumSettingsRole>()
+                .Where(role =>
+                    role.GuildId == config.GuildId
+                    && role.TargetType == config.TargetType
+                    && role.TargetId == config.TargetId)
+                .ExecuteDeleteAsync();
 
-        List<QuorumSettingsRole> roleRows = config.RoleIds.Select(roleId => new QuorumSettingsRole(roleId)).ToList();
-        dbContext.AddRange(roleRows);
-
-        foreach (EntityEntry<QuorumSettingsRole> entry in roleRows.Select(dbContext.Entry))
-        {
-            entry.Property("GuildId").CurrentValue = config.GuildId;
-            entry.Property("TargetType").CurrentValue = config.TargetType;
-            entry.Property("TargetId").CurrentValue = config.TargetId;
+            dbContext.AddRange(config.Roles);
         }
 
         await dbContext.SaveChangesAsync();
@@ -84,9 +71,9 @@ public sealed class QuorumSettingsRepository(BotDbContext dbContext) : IQuorumSe
         await dbContext
             .Set<QuorumSettingsRole>()
             .Where(role =>
-                EF.Property<ulong>(role, "GuildId") == guildId
-                && EF.Property<QuorumSettingsType>(role, "TargetType") == targetType
-                && EF.Property<ulong>(role, "TargetId") == targetId)
+                role.GuildId == guildId
+                && role.TargetType == targetType
+                && role.TargetId == targetId)
             .ExecuteDeleteAsync();
 
         dbContext.Remove(entity);

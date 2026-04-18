@@ -1,5 +1,3 @@
-using RatBot.Infrastructure.Persistence.Models;
-
 namespace RatBot.Infrastructure.Data;
 
 /// <summary>

@@ -85,12 +85,19 @@ public sealed class SettingsModule : SlashCommandBase
             }
             
             ImmutableArray<RestRole> roles = rolesBuilder.ToImmutable();
+            ulong[] resolvedRoleIds = roles.Select(role => role.Id).ToArray();
+
+            if (resolvedRoleIds.Length != roleIds.Distinct().Count())
+            {
+                await RespondAsync("One or more role IDs could not be found.", ephemeral: true);
+                return;
+            }
 
             ErrorOr<QuorumSettingsUpsertResult> upsertResult = await quorumSettingsService.UpsertAsync(
                 Context.Guild.Id,
                 resolvedTarget.TargetType,
                 resolvedTarget.Channel.Id,
-                roles.Select(role => role.Id),
+                resolvedRoleIds,
                 proportion);
 
             await upsertResult.SwitchFirstAsync(

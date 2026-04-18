@@ -168,7 +168,7 @@ namespace RatBot.Infrastructure.Migrations
                     b.ToTable("QuorumConfigs", (string)null);
                 });
 
-            modelBuilder.Entity("RatBot.Infrastructure.Persistence.Models.QuorumSettingsRole", b =>
+            modelBuilder.Entity("RatBot.Domain.Quorum.QuorumSettingsRole", b =>
                 {
                     b.Property<long>("GuildId")
                         .HasColumnType("bigint");
@@ -188,10 +188,10 @@ namespace RatBot.Infrastructure.Migrations
                     b.ToTable("QuorumConfigRoles", (string)null);
                 });
 
-            modelBuilder.Entity("RatBot.Infrastructure.Persistence.Models.QuorumSettingsRole", b =>
+            modelBuilder.Entity("RatBot.Domain.Quorum.QuorumSettingsRole", b =>
                 {
                     b.HasOne("RatBot.Domain.Quorum.QuorumSettings", null)
-                        .WithMany()
+                        .WithMany("Roles")
                         .HasForeignKey("GuildId", "TargetType", "TargetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

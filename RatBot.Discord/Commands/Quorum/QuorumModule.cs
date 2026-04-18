@@ -38,15 +38,20 @@ public sealed class QuorumModule(ILogger logger, QuorumSettingsService quorumSet
         logger.Debug("Quorum settings: {Config}", config);
 
         SocketGuild guild = Context.Guild!;
-        SocketRole[] roles = config.RoleIds.Select(guild.GetRole).Where(role => role is not null).ToArray()!;
+
+        SocketRole[] roles = config
+            .Roles
+            .Select(role => guild.GetRole(role.Id))
+            .Where(role => role is not null)
+            .ToArray()!;
 
         HashSet<ulong> usersWithRoles = roles.SelectMany(x => x.Members).Select(y => y.Id).ToHashSet();
 
         int quorumCount = QuorumCalculator.CalculateRequiredMemberCount(usersWithRoles.Count, config.QuorumProportion);
 
         _logger.Debug(
-            "Members with roles {RoleIds}: {UsersWithRoles}, quorum count: {QuorumCount}, proportion: {ConfigQuorumProportion}",
-            config.RoleIds,
+            "Members with roles {RolesIds}: {UsersWithRoles}, quorum count: {QuorumCount}, proportion: {ConfigQuorumProportion}",
+            config.Roles.Select(x => x.Id),
             usersWithRoles,
             quorumCount,
             config.QuorumProportion);
