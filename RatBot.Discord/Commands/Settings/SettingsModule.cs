@@ -5,7 +5,9 @@ using RatBot.Application.Common.Extensions;
 using RatBot.Application.Meta;
 using RatBot.Application.RoleColours;
 using RatBot.Infrastructure.Data;
+using RatBot.Discord.Handlers;
 using RatBot.Infrastructure.RoleColours;
+using Microsoft.EntityFrameworkCore;
 
 namespace RatBot.Discord.Commands.Settings;
 
@@ -18,7 +20,7 @@ public sealed class SettingsModule : SlashCommandBase
 
     [Group("colour", "Role colour configuration.")]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
-    public sealed class ColourSettingsModule(BotDbContext db)
+    public sealed class ColourSettingsModule(BotDbContext db, IRoleColourReconciler reconciler)
         : SlashCommandBase
     {
         [SlashCommand("add", "Register a source/display role colour mapping.")]
@@ -37,6 +39,8 @@ public sealed class SettingsModule : SlashCommandBase
                 return;
             }
 
+            await DeferAsync(true);
+
             RoleColourRegistrationContext registrationContext = BuildRegistrationContext(source.Id, display.Id);
 
             ErrorOr<RoleColourOption> result = await RegisterRoleColourOption.ExecuteAsync(
@@ -51,10 +55,16 @@ public sealed class SettingsModule : SlashCommandBase
                 CancellationToken.None);
 
             await result.SwitchFirstAsync(
-                async option => await RespondAsync(
-                    $"Registered colour option `{option.Key}` (‘{option.Label}’): {source.Mention} -> {display.Mention}.",
-                    ephemeral: true),
-                async error => await RespondAsync(error.Description, ephemeral: true)
+                async option =>
+                {
+                    int reconciled = await ReconcileMembersWithSourceRoleAsync(Context.Guild, option.SourceRoleId);
+                    string message =
+                        $"Registered colour option `{option.Key}` (‘{option.Label}’): {source.Mention} -> {display.Mention}.\n" +
+                        $"Triggered colour sync for {reconciled} member(s).";
+
+                    await FollowupAsync(message, ephemeral: true);
+                },
+                async error => await FollowupAsync(error.Description, ephemeral: true)
             );
         }
 
@@ -105,6 +115,65 @@ public sealed class SettingsModule : SlashCommandBase
             }
 
             await RespondAsync(BuildListResponse(options), ephemeral: true);
+        }
+
+        [SlashCommand("sync", "Reconcile display colour roles for all members who currently have a source colour role.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task SyncAsync()
+        {
+            if (Context.Guild is null)
+            {
+                await RespondAsync(ONLY_IN_GUILD, ephemeral: true);
+                return;
+            }
+
+            await DeferAsync(true);
+
+            // Load enabled options and gather SCR set
+            List<RoleColourOption> enabled = await db.RoleColourOptions
+                .AsNoTracking()
+                .Where(o => o.IsEnabled)
+                .ToListAsync(CancellationToken.None);
+
+            if (enabled.Count == 0)
+            {
+                await FollowupAsync("No enabled colour options are configured.", ephemeral: true);
+                return;
+            }
+
+            HashSet<ulong> scrSet = enabled
+                .Select(o => o.SourceRoleId)
+                .ToHashSet();
+
+            int reconciled = await ReconcileMembersWithAnySourceRoleAsync(Context.Guild, scrSet);
+
+            await FollowupAsync($"Triggered colour sync for {reconciled} member(s).", ephemeral: true);
+        }
+
+        private async Task<int> ReconcileMembersWithSourceRoleAsync(IGuild guild, ulong sourceRoleId)
+        {
+            IReadOnlyCollection<IGuildUser> users = await guild.GetUsersAsync();
+            List<IGuildUser> targetUsers = users
+                .Where(u => u.RoleIds.Contains(sourceRoleId))
+                .ToList();
+
+            foreach (IGuildUser user in targetUsers)
+                await reconciler.ReconcileMemberAsync(guild, user.Id, CancellationToken.None);
+
+            return targetUsers.Count;
+        }
+
+        private async Task<int> ReconcileMembersWithAnySourceRoleAsync(IGuild guild, HashSet<ulong> sourceRoleIds)
+        {
+            IReadOnlyCollection<IGuildUser> users = await guild.GetUsersAsync();
+            List<IGuildUser> targetUsers = users
+                .Where(u => u.RoleIds.Any(sourceRoleIds.Contains))
+                .ToList();
+
+            foreach (IGuildUser user in targetUsers)
+                await reconciler.ReconcileMemberAsync(guild, user.Id, CancellationToken.None);
+
+            return targetUsers.Count;
         }
 
         private RoleColourRegistrationContext BuildRegistrationContext(ulong sourceRoleId, ulong displayRoleId)
