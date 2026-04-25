@@ -5,9 +5,9 @@ using RatBot.Application.Common.Extensions;
 using RatBot.Application.Meta;
 using RatBot.Application.RoleColours;
 using RatBot.Infrastructure.Data;
-using RatBot.Discord.Handlers;
 using RatBot.Infrastructure.RoleColours;
 using Microsoft.EntityFrameworkCore;
+using RatBot.Discord.BackgroundWorkers;
 
 namespace RatBot.Discord.Commands.Settings;
 
@@ -20,7 +20,7 @@ public sealed class SettingsModule : SlashCommandBase
 
     [Group("colour", "Role colour configuration.")]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
-    public sealed class ColourSettingsModule(BotDbContext db, IRoleColourReconciler reconciler)
+    public sealed class ColourSettingsModule(BotDbContext dbContext, IRoleColourSyncQueue syncQueue)
         : SlashCommandBase
     {
         [SlashCommand("add", "Register a source/display role colour mapping.")]
@@ -44,7 +44,7 @@ public sealed class SettingsModule : SlashCommandBase
             RoleColourRegistrationContext registrationContext = BuildRegistrationContext(source.Id, display.Id);
 
             ErrorOr<RoleColourOption> result = await RegisterRoleColourOption.ExecuteAsync(
-                db,
+                dbContext,
                 new RegisterRoleColourOption.Command(
                     Key: name,
                     Label: name,
@@ -57,12 +57,22 @@ public sealed class SettingsModule : SlashCommandBase
             await result.SwitchFirstAsync(
                 async option =>
                 {
-                    int reconciled = await ReconcileMembersWithSourceRoleAsync(Context.Guild, option.SourceRoleId);
-                    string message =
-                        $"Registered colour option `{option.Key}` (‘{option.Label}’): {source.Mention} -> {display.Mention}.\n" +
-                        $"Triggered colour sync for {reconciled} member(s).";
+                    int queued = await EnqueueMembersWithSourceRoleAsync(Context.Guild, option.SourceRoleId);
+                    IRoleColourSyncQueue.Status status = syncQueue.GetStatus();
+                    string eta = FormatEta(status);
 
-                    await FollowupAsync(message, ephemeral: true);
+                    string message =
+                        $"Registered colour option `{option.Key}` (‘{option.Label}’): {source.Mention} -> {display.Mention}.\n"
+                        + $"Queued {queued} member(s) for colour sync. Current queue: pending={status.Pending}, in_flight={status.InFlight}, ETA={eta}.";
+
+                    ComponentBuilder components = (status.Pending + status.InFlight) == 0
+                        ? new ComponentBuilder()
+                        : new ComponentBuilder().WithButton(
+                            label: "Refresh",
+                            customId: $"colour-sync-refresh:{Context.User.Id}",
+                            style: ButtonStyle.Primary);
+
+                    await FollowupAsync(message, ephemeral: true, components: components.Build());
                 },
                 async error => await FollowupAsync(error.Description, ephemeral: true)
             );
@@ -81,7 +91,7 @@ public sealed class SettingsModule : SlashCommandBase
             }
 
             ErrorOr<RoleColourOption> result = await DisableRoleColourOption.ExecuteAsync(
-                db,
+                dbContext,
                 new DisableRoleColourOption.Command(name),
                 CancellationToken.None);
 
@@ -104,7 +114,7 @@ public sealed class SettingsModule : SlashCommandBase
             }
 
             IReadOnlyList<RoleColourOption> options = await ListRoleColourOptions.ExecuteAsync(
-                db,
+                dbContext,
                 new ListRoleColourOptions.Query(includeDisabled),
                 CancellationToken.None);
 
@@ -117,7 +127,9 @@ public sealed class SettingsModule : SlashCommandBase
             await RespondAsync(BuildListResponse(options), ephemeral: true);
         }
 
-        [SlashCommand("sync", "Reconcile display colour roles for all members who currently have a source colour role.")]
+        [SlashCommand(
+            "sync",
+            "Reconcile display colour roles for all members who currently have a source colour role.")]
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task SyncAsync()
         {
@@ -130,7 +142,7 @@ public sealed class SettingsModule : SlashCommandBase
             await DeferAsync(true);
 
             // Load enabled options and gather SCR set
-            List<RoleColourOption> enabled = await db.RoleColourOptions
+            List<RoleColourOption> enabled = await dbContext.RoleColourOptions
                 .AsNoTracking()
                 .Where(o => o.IsEnabled)
                 .ToListAsync(CancellationToken.None);
@@ -145,35 +157,61 @@ public sealed class SettingsModule : SlashCommandBase
                 .Select(o => o.SourceRoleId)
                 .ToHashSet();
 
-            int reconciled = await ReconcileMembersWithAnySourceRoleAsync(Context.Guild, scrSet);
+            int queued = await EnqueueMembersWithAnySourceRoleAsync(Context.Guild, scrSet);
+            IRoleColourSyncQueue.Status status = syncQueue.GetStatus();
+            string eta = FormatEta(status);
 
-            await FollowupAsync($"Triggered colour sync for {reconciled} member(s).", ephemeral: true);
+            ComponentBuilder components = (status.Pending + status.InFlight) == 0
+                ? new ComponentBuilder()
+                : new ComponentBuilder().WithButton(
+                    label: "Refresh",
+                    customId: $"colour-sync-refresh:{Context.User.Id}",
+                    style: ButtonStyle.Primary);
+
+            await FollowupAsync(
+                $"Queued {queued} member(s). Current queue: pending={status.Pending}, in_flight={status.InFlight}, ETA={eta}.",
+                ephemeral: true,
+                components: components.Build());
         }
 
-        private async Task<int> ReconcileMembersWithSourceRoleAsync(IGuild guild, ulong sourceRoleId)
+        private async Task<int> EnqueueMembersWithSourceRoleAsync(IGuild guild, ulong sourceRoleId)
         {
             IReadOnlyCollection<IGuildUser> users = await guild.GetUsersAsync();
-            List<IGuildUser> targetUsers = users
+
+            ImmutableArray<IGuildUser> targetUsers = users
                 .Where(u => u.RoleIds.Contains(sourceRoleId))
-                .ToList();
+                .ToImmutableArray();
 
-            foreach (IGuildUser user in targetUsers)
-                await reconciler.ReconcileMemberAsync(guild, user.Id, CancellationToken.None);
-
-            return targetUsers.Count;
+            return targetUsers.Count(user => syncQueue.Enqueue(guild.Id, user.Id));
         }
 
-        private async Task<int> ReconcileMembersWithAnySourceRoleAsync(IGuild guild, HashSet<ulong> sourceRoleIds)
+        private async Task<int> EnqueueMembersWithAnySourceRoleAsync(IGuild guild, HashSet<ulong> sourceRoleIds)
         {
             IReadOnlyCollection<IGuildUser> users = await guild.GetUsersAsync();
-            List<IGuildUser> targetUsers = users
+
+            ImmutableArray<IGuildUser> targetUsers = users
                 .Where(u => u.RoleIds.Any(sourceRoleIds.Contains))
-                .ToList();
+                .ToImmutableArray();
 
-            foreach (IGuildUser user in targetUsers)
-                await reconciler.ReconcileMemberAsync(guild, user.Id, CancellationToken.None);
+            return targetUsers.Count(user => syncQueue.Enqueue(guild.Id, user.Id));
+        }
 
-            return targetUsers.Count;
+        private static string FormatEta(IRoleColourSyncQueue.Status status)
+        {
+            if (status.Eta is null)
+                return "unknown";
+
+            TimeSpan eta = status.Eta.Value;
+
+            if (eta.TotalSeconds < 1)
+                return "<1s";
+
+            if (eta.TotalMinutes < 1)
+                return $"~{Math.Ceiling(eta.TotalSeconds)}s";
+
+            return eta.TotalHours < 1
+                ? $"~{Math.Floor(eta.TotalMinutes)}m {eta.Seconds:D2}s"
+                : $"~{Math.Floor(eta.TotalHours)}h {eta.Minutes:D2}m";
         }
 
         private RoleColourRegistrationContext BuildRegistrationContext(ulong sourceRoleId, ulong displayRoleId)
@@ -185,7 +223,7 @@ public sealed class SettingsModule : SlashCommandBase
                 SourceRoleExists: sourceRole is not null,
                 DisplayRoleExists: displayRole is not null,
                 SourceRoleHasColour: sourceRole is not null
-                                     && sourceRole.Colors.PrimaryColor != Color.Default);
+                                     && sourceRole.Colors.PrimaryColor != global::Discord.Color.Default);
         }
 
         private static string BuildListResponse(IReadOnlyList<RoleColourOption> options)
@@ -203,6 +241,51 @@ public sealed class SettingsModule : SlashCommandBase
             }
 
             return builder.ToString();
+        }
+
+        [ComponentInteraction("colour-sync-refresh:*", true)]
+        public async Task OnColourSyncRefreshAsync(ulong ownerUserId)
+        {
+            if (Context.User.Id != ownerUserId)
+            {
+                await RespondAsync("This status panel is not for you.", ephemeral: true);
+                return;
+            }
+
+            IRoleColourSyncQueue.Status status = syncQueue.GetStatus();
+            string eta = FormatEta(status);
+
+            bool done = (status.Pending + status.InFlight) == 0;
+            string content = done
+                ? "Role colour sync complete. Queue is empty."
+                : $"Current queue: pending={status.Pending}, in_flight={status.InFlight}, ETA={eta}.";
+
+            ComponentBuilder components = done
+                ? new ComponentBuilder()
+                : new ComponentBuilder().WithButton(
+                    label: "Refresh",
+                    customId: $"colour-sync-refresh:{ownerUserId}",
+                    style: ButtonStyle.Primary);
+
+            try
+            {
+                if (Context.Interaction is SocketMessageComponent smc)
+                {
+                    await smc.UpdateAsync(m =>
+                    {
+                        m.Content = content;
+                        m.Components = components.Build();
+                    });
+                }
+                else
+                {
+                    await RespondAsync(content, ephemeral: true, components: components.Build());
+                }
+            }
+            catch
+            {
+                // best-effort; ignore update failures
+            }
         }
     }
 

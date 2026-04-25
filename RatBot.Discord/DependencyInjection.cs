@@ -61,12 +61,16 @@ public static class DependencyInjection
             services.AddSingleton<IQuorumCommandInputResolver, QuorumCommandInputResolver>();
             services.AddSingleton<IRoleColourReconciler, RoleColourReconciler>();
 
+            // Role-colour sync queue and background worker
+            services.AddSingleton<IRoleColourSyncQueue, RoleColourSyncQueue>();
+
             services.AddSingleton<DiscordMetaSuggestionForumServiceFactory>(_ =>
                 guild => new MetaSuggestionForumService(guild));
 
             services.AddHostedService<DiscordBotHostedService>();
             services.AddHostedService<GuildMemberCacheBackgroundWorker>();
             services.AddHostedService<EmojiAnalyticsBackgroundWorker>();
+            services.AddHostedService<RoleColourSyncBackgroundWorker>();
         }
     }
 }
