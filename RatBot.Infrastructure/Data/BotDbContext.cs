@@ -1,3 +1,4 @@
+
 namespace RatBot.Infrastructure.Data;
 
 /// <summary>
@@ -20,6 +21,8 @@ public sealed class BotDbContext : DbContext
     public DbSet<MetaSuggestion> MetaSuggestions => Set<MetaSuggestion>();
     public DbSet<MetaSuggestionSettings> MetaSuggestionSettings => Set<MetaSuggestionSettings>();
     public DbSet<AutobannedUser> AutobannedUsers => Set<AutobannedUser>();
+    public DbSet<RoleColourOption> RoleColourOptions => Set<RoleColourOption>();
+    public DbSet<MemberColourPreference> MemberColourPreferences => Set<MemberColourPreference>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BotDbContext).Assembly);

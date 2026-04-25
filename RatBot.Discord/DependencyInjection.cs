@@ -54,9 +54,12 @@ public static class DependencyInjection
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<AutobanGatewayHandler>());
             services.AddSingleton<EmojiReactionGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<EmojiReactionGatewayHandler>());
+            services.AddSingleton<UserUpdatedGatewayHandler>();
+            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<UserUpdatedGatewayHandler>());
             services.AddSingleton<GuildMemberCacheService>();
             services.AddSingleton<MetaSuggestionPendingStore>();
             services.AddSingleton<IQuorumCommandInputResolver, QuorumCommandInputResolver>();
+            services.AddSingleton<IRoleColourReconciler, RoleColourReconciler>();
 
             services.AddSingleton<DiscordMetaSuggestionForumServiceFactory>(_ =>
                 guild => new MetaSuggestionForumService(guild));

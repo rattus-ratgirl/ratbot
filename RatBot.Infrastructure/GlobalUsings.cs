@@ -7,4 +7,5 @@ global using RatBot.Domain.Emoji;
 global using RatBot.Domain.Meta;
 global using RatBot.Domain.Moderation;
 global using RatBot.Domain.Quorum;
+global using RatBot.Domain.RoleColours;
 global using RatBot.Domain.Rps;

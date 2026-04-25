@@ -3,6 +3,7 @@ using RatBot.Application.Administration;
 using RatBot.Application.Meta;
 using RatBot.Application.Moderation;
 using RatBot.Application.Quorum;
+using RatBot.Application.RoleColours;
 using RatBot.Application.Rps;
 
 namespace RatBot.Application;
@@ -11,7 +12,7 @@ public static class DependencyInjection
 {
     extension(IServiceCollection services)
     {
-        public IServiceCollection AddApplication()
+        public void AddApplication()
         {
             services.AddSingleton<EmojiAnalyticsBuffer>();
 
@@ -23,8 +24,6 @@ public static class DependencyInjection
             services.AddScoped<IQuorumSettingsReader, QuorumSettingsReader>();
             services.AddScoped<IQuorumSettingsWriter, QuorumSettingsWriter>();
             services.AddScoped<RpsGameService>();
-
-            return services;
         }
     }
 }

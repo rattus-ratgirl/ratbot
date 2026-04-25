@@ -1,7 +1,11 @@
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Text;
 using RatBot.Application.Common.Extensions;
 using RatBot.Application.Meta;
+using RatBot.Application.RoleColours;
+using RatBot.Infrastructure.Data;
+using RatBot.Infrastructure.RoleColours;
 
 namespace RatBot.Discord.Commands.Settings;
 
@@ -9,6 +13,130 @@ namespace RatBot.Discord.Commands.Settings;
 [DefaultMemberPermissions(GuildPermission.Administrator)]
 public sealed class SettingsModule : SlashCommandBase
 {
+    // ReSharper disable once InconsistentNaming
+    private const string ONLY_IN_GUILD = "This command can only be used in a guild.";
+
+    [Group("colour", "Role colour configuration.")]
+    [DefaultMemberPermissions(GuildPermission.Administrator)]
+    public sealed class ColourSettingsModule(BotDbContext db)
+        : SlashCommandBase
+    {
+        [SlashCommand("add", "Register a source/display role colour mapping.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task AddAsync(
+            [Summary("name", "Name used to identify this colour.")]
+            string name,
+            [Summary("source", "Source colour role users select.")]
+            IRole source,
+            [Summary("display", "Display colour role RatBot manages.")]
+            IRole display)
+        {
+            if (Context.Guild is null)
+            {
+                await RespondAsync(ONLY_IN_GUILD, ephemeral: true);
+                return;
+            }
+
+            RoleColourRegistrationContext registrationContext = BuildRegistrationContext(source.Id, display.Id);
+
+            ErrorOr<RoleColourOption> result = await RegisterRoleColourOption.ExecuteAsync(
+                db,
+                new RegisterRoleColourOption.Command(
+                    Key: name,
+                    Label: name,
+                    SourceRoleId: source.Id,
+                    DisplayRoleId: display.Id,
+                    RegistrationContext: registrationContext
+                ),
+                CancellationToken.None);
+
+            await result.SwitchFirstAsync(
+                async option => await RespondAsync(
+                    $"Registered colour option `{option.Key}` (‘{option.Label}’): {source.Mention} -> {display.Mention}.",
+                    ephemeral: true),
+                async error => await RespondAsync(error.Description, ephemeral: true)
+            );
+        }
+
+        [SlashCommand("disable", "Disable a configured role colour option.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task DisableAsync(
+            [Summary("name", "Name of the colour option to disable.")]
+            string name)
+        {
+            if (Context.Guild is null)
+            {
+                await RespondAsync(ONLY_IN_GUILD, ephemeral: true);
+                return;
+            }
+
+            ErrorOr<RoleColourOption> result = await DisableRoleColourOption.ExecuteAsync(
+                db,
+                new DisableRoleColourOption.Command(name),
+                CancellationToken.None);
+
+            await result.SwitchFirstAsync(
+                async option => await RespondAsync($"Disabled colour option `{option.Key}`.", ephemeral: true),
+                async error => await RespondAsync(error.Description, ephemeral: true)
+            );
+        }
+
+        [SlashCommand("list", "List configured role colour options.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task ListAsync(
+            [Summary("include-disabled", "Include disabled colour options.")]
+            bool includeDisabled = true)
+        {
+            if (Context.Guild is null)
+            {
+                await RespondAsync(ONLY_IN_GUILD, ephemeral: true);
+                return;
+            }
+
+            IReadOnlyList<RoleColourOption> options = await ListRoleColourOptions.ExecuteAsync(
+                db,
+                new ListRoleColourOptions.Query(includeDisabled),
+                CancellationToken.None);
+
+            if (options.Count == 0)
+            {
+                await RespondAsync("No colour options are configured.", ephemeral: true);
+                return;
+            }
+
+            await RespondAsync(BuildListResponse(options), ephemeral: true);
+        }
+
+        private RoleColourRegistrationContext BuildRegistrationContext(ulong sourceRoleId, ulong displayRoleId)
+        {
+            SocketRole? sourceRole = Context.Guild.GetRole(sourceRoleId);
+            SocketRole? displayRole = Context.Guild.GetRole(displayRoleId);
+
+            return new RoleColourRegistrationContext(
+                SourceRoleExists: sourceRole is not null,
+                DisplayRoleExists: displayRole is not null,
+                SourceRoleHasColour: sourceRole is not null
+                                     && sourceRole.Colors.PrimaryColor != Color.Default);
+        }
+
+        private static string BuildListResponse(IReadOnlyList<RoleColourOption> options)
+        {
+            StringBuilder builder = new StringBuilder("Configured colour options:");
+
+            foreach (RoleColourOption option in options)
+            {
+                string state = option.IsEnabled
+                    ? "enabled"
+                    : "disabled";
+
+                builder.AppendLine()
+                    .Append($"`{option.Key}`: <@&{option.SourceRoleId}> -> <@&{option.DisplayRoleId}> ({state})");
+            }
+
+            return builder.ToString();
+        }
+    }
+
     [Group("meta", "Meta configuration.")]
     public sealed class MetaSettingsModule(MetaSuggestionSettingsService metaSuggestionSettingsService)
         : SlashCommandBase
@@ -84,7 +212,7 @@ public sealed class SettingsModule : SlashCommandBase
         {
             if (Context.Guild is null)
             {
-                await RespondAsync("This command can only be used in a guild.", ephemeral: true);
+                await RespondAsync(ONLY_IN_GUILD, ephemeral: true);
                 return;
             }
 

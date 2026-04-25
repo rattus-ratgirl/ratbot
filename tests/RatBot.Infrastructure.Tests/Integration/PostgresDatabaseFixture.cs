@@ -1,10 +1,13 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using RatBot.Infrastructure.Data;
 using Testcontainers.PostgreSql;
 
 namespace RatBot.Infrastructure.Tests.Integration;
 
 [SetUpFixture]
+[SuppressMessage("Structure", "NUnit1028:The non-test method is public")]
 public sealed class PostgresDatabaseFixture
 {
     private static PostgreSqlContainer _container = null!;
@@ -34,6 +37,7 @@ public sealed class PostgresDatabaseFixture
         DbContextOptions<BotDbContext> options = new DbContextOptionsBuilder<BotDbContext>()
             .UseNpgsql(ConnectionString)
             .EnableSensitiveDataLogging()
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
         return new BotDbContext(options);
