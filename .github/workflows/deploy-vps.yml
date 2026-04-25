@@ -1,11 +1,7 @@
 name: Deploy RatBot to VPS
 
 on:
-  workflow_run:
-    workflows:
-      - CI Tests
-    types:
-      - completed
+  push:
     branches:
       - master
   workflow_dispatch:
@@ -44,11 +40,9 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion || '' }}
-          WORKFLOW_EVENT: ${{ github.event.workflow_run.event || '' }}
-          WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch || '' }}
-          WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha || '' }}
-          WORKFLOW_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name || '' }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_SHA_VALUE: ${{ github.sha }}
+          GITHUB_REPOSITORY_VALUE: ${{ github.repository }}
           INPUT_TARGET: ${{ github.event.inputs.target || '' }}
           INPUT_IMAGE_TAG: ${{ github.event.inputs.image_tag || '' }}
         run: |
@@ -63,17 +57,13 @@ jobs:
           targets="[]"
           reason=""
 
-          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
-            if [[ "$WORKFLOW_CONCLUSION" != "success" ]]; then
-              reason="CI workflow did not succeed."
-            elif [[ "$WORKFLOW_EVENT" != "push" ]]; then
-              reason="Ignoring CI workflow not triggered by a push event."
-            elif [[ "$WORKFLOW_HEAD_REPO" != "$GITHUB_REPOSITORY" ]]; then
-              reason="Ignoring workflow run from different repository."
-            elif [[ "$WORKFLOW_HEAD_BRANCH" == "master" ]]; then
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            if [[ "$GITHUB_REPOSITORY_VALUE" != "$GITHUB_REPOSITORY" ]]; then
+              reason="Ignoring push from different repository."
+            elif [[ "$GITHUB_REF_NAME" == "master" ]]; then
               build_image="true"
               deploy="true"
-              source_sha="$WORKFLOW_HEAD_SHA"
+              source_sha="$GITHUB_SHA_VALUE"
               image_ref="${image_repo}:sha-${source_sha}"
               targets="$(jq -cn --arg image_ref "$image_ref" '[
                 {
@@ -91,7 +81,7 @@ jobs:
                   image_ref: $image_ref
                 }
               ]')"
-              reason="Build image and auto deploy production and staging after CI passes on master."
+              reason="Build image and auto deploy production and staging after pushes to master."
             else
               reason="Branch is not mapped to auto deployment."
             fi
