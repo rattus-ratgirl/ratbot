@@ -9,7 +9,7 @@ public sealed class EmojiAnalyticsBuffer
         {
             SingleReader = true,
             SingleWriter = false,
-            AllowSynchronousContinuations = false
+            AllowSynchronousContinuations = false,
         }
     );
 

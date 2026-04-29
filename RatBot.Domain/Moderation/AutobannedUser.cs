@@ -21,6 +21,6 @@ public sealed record AutobannedUser
             GuildId = guildId,
             BannedUser = bannedUser,
             Moderator = moderator,
-            RegisteredAtUtc = registeredAtUtc
+            RegisteredAtUtc = registeredAtUtc,
         };
 }

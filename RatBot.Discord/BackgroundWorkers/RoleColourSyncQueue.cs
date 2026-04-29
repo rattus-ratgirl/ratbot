@@ -11,7 +11,7 @@ public sealed class RoleColourSyncQueue : IRoleColourSyncQueue
             {
                 SingleReader = false,
                 SingleWriter = false,
-                FullMode = BoundedChannelFullMode.DropOldest
+                FullMode = BoundedChannelFullMode.DropOldest,
             });
 
     private readonly ConcurrentDictionary<(ulong GuildId, ulong UserId), byte> _dedupe =

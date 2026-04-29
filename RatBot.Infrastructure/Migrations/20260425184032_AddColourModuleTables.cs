@@ -23,7 +23,7 @@ namespace RatBot.Infrastructure.Migrations
                     DisplayRoleId = table.Column<long>(type: "bigint", nullable: false),
                     IsEnabled = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -40,7 +40,7 @@ namespace RatBot.Infrastructure.Migrations
                     PreferenceId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<long>(type: "bigint", nullable: false),
                     Kind = table.Column<int>(type: "integer", nullable: false),
-                    SelectedOptionId = table.Column<Guid>(type: "uuid", nullable: true)
+                    SelectedOptionId = table.Column<Guid>(type: "uuid", nullable: true),
                 },
                 constraints: table =>
                 {

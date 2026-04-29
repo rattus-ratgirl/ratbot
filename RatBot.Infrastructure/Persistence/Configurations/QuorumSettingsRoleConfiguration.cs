@@ -19,7 +19,7 @@ public sealed class QuorumSettingsRoleConfiguration : IEntityTypeConfiguration<Q
             x.GuildId,
             x.TargetType,
             x.TargetId,
-            x.Id
+            x.Id,
         });
     }
 }

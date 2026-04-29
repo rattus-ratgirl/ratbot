@@ -35,7 +35,7 @@ public sealed class RpsModule(RpsGameService rpsGameService) : SlashCommandBase
             RpsGameOutcome.Tie => "It's a tie.",
             RpsGameOutcome.ChallengerWon => "Challenger wins.",
             RpsGameOutcome.OpponentWon => "Opponent wins.",
-            _ => "Game complete."
+            _ => "Game complete.",
         };
 
     [UserCommand("Challenge to RPS")]

@@ -24,7 +24,7 @@ public sealed class MemberColourPreference
             PreferenceId = Id.NewId(),
             UserId = userId,
             Kind = MemberColourPreferenceKind.ConfiguredOption,
-            SelectedOptionId = selectedId
+            SelectedOptionId = selectedId,
         };
 
     public static MemberColourPreference CreateNoColour(ulong userId) =>
@@ -33,7 +33,7 @@ public sealed class MemberColourPreference
             PreferenceId = Id.NewId(),
             UserId = userId,
             Kind = MemberColourPreferenceKind.NoColour,
-            SelectedOptionId = null
+            SelectedOptionId = null,
         };
 
     public void SelectOption(RoleColourOption.Id id)

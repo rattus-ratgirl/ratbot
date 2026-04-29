@@ -13,5 +13,5 @@ public enum QuorumSettingsType
     /// <summary>
     ///     Configuration corresponds to a channel category.
     /// </summary>
-    Category = 2
+    Category = 2,
 }

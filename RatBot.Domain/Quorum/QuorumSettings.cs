@@ -76,7 +76,7 @@ public sealed class QuorumSettings
                     Id = roleId,
                     GuildId = GuildId,
                     TargetType = TargetType,
-                    TargetId = TargetId
+                    TargetId = TargetId,
                 })
         );
     }

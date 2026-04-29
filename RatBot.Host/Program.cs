@@ -88,7 +88,7 @@ public static class Program
                 ["service.instance.id"] = serviceInstanceId,
                 ["service_name"] = serviceName,
                 ["service_instance_id"] = serviceInstanceId,
-                ["environment"] = environment
+                ["environment"] = environment,
             };
         });
     }

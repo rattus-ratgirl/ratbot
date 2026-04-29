@@ -4,5 +4,5 @@ public enum RpsGameOutcome
 {
     Tie,
     ChallengerWon,
-    OpponentWon
+    OpponentWon,
 }

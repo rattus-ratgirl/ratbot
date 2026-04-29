@@ -4,5 +4,5 @@ public enum RpsPick
 {
     Rock,
     Paper,
-    Scissors
+    Scissors,
 }

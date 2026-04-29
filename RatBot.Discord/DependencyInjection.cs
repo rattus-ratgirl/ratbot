@@ -39,7 +39,7 @@ public static class DependencyInjection
                             | GatewayIntents.GuildMembers
                             | GatewayIntents.GuildMessages
                             | GatewayIntents.GuildMessageReactions
-                            | GatewayIntents.MessageContent
+                            | GatewayIntents.MessageContent,
                     }
                 );
             });

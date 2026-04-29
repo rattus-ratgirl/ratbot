@@ -53,7 +53,7 @@ public sealed class RoleColourOption
             DisplayRoleId = displayRoleId,
             IsEnabled = true,
             CreatedAtUtc = now,
-            UpdatedAtUtc = now
+            UpdatedAtUtc = now,
         };
     }
 

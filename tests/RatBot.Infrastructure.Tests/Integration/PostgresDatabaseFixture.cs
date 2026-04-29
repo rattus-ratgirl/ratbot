@@ -12,7 +12,7 @@ public sealed class PostgresDatabaseFixture
 {
     private static PostgreSqlContainer _container = null!;
 
-    public static string ConnectionString => _container.GetConnectionString();
+    private static string ConnectionString => _container.GetConnectionString();
 
     public static BotDbContext CreateDbContext()
     {
@@ -27,14 +27,17 @@ public sealed class PostgresDatabaseFixture
 
     public async static Task ResetAsync()
     {
-        await using BotDbContext db = CreateDbContext();
+        BotDbContext db = CreateDbContext();
 
-        await db.QuorumSettingsRoles.ExecuteDeleteAsync();
-        await db.QuorumSettings.ExecuteDeleteAsync();
-        await db.MetaSuggestions.ExecuteDeleteAsync();
-        await db.MetaSuggestionSettings.ExecuteDeleteAsync();
-        await db.AutobannedUsers.ExecuteDeleteAsync();
-        await db.EmojiUsageCounts.ExecuteDeleteAsync();
+        await using (db.ConfigureAwait(false))
+        {
+            await db.QuorumSettingsRoles.ExecuteDeleteAsync().ConfigureAwait(false);
+            await db.QuorumSettings.ExecuteDeleteAsync().ConfigureAwait(false);
+            await db.MetaSuggestions.ExecuteDeleteAsync().ConfigureAwait(false);
+            await db.MetaSuggestionSettings.ExecuteDeleteAsync().ConfigureAwait(false);
+            await db.AutobannedUsers.ExecuteDeleteAsync().ConfigureAwait(false);
+            await db.EmojiUsageCounts.ExecuteDeleteAsync().ConfigureAwait(false);
+        }
     }
 
     [OneTimeSetUp]

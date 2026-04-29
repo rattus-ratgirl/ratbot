@@ -12,7 +12,7 @@ public sealed class QuorumSettingsConfiguration : IEntityTypeConfiguration<Quoru
         {
             x.GuildId,
             x.TargetType,
-            x.TargetId
+            x.TargetId,
         });
 
         builder.Property(x => x.GuildId).HasColumnType("bigint").HasConversion<long>();
@@ -27,7 +27,7 @@ public sealed class QuorumSettingsConfiguration : IEntityTypeConfiguration<Quoru
             {
                 x.GuildId,
                 x.TargetType,
-                x.TargetId
+                x.TargetId,
             })
             .OnDelete(DeleteBehavior.Cascade);
 

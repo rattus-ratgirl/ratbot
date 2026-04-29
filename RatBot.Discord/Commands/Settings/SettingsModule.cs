@@ -474,7 +474,7 @@ public sealed class SettingsModule : SlashCommandBase
                     $"Quorum settings {action} for channel {textChannel.Mention} with roles {renderedRoles} and proportion {renderedProportion}.",
                 SocketCategoryChannel categoryChannel =>
                     $"Quorum settings {action} for category \"{categoryChannel.Name}\" with roles {renderedRoles} and proportion {renderedProportion}.",
-                _ => "Invalid channel type for quorum settings."
+                _ => "Invalid channel type for quorum settings.",
             };
         }
 
@@ -492,7 +492,7 @@ public sealed class SettingsModule : SlashCommandBase
                     $"Quorum settings for channel {textChannel.Mention}: roles {renderedRoles}; proportion {renderedProportion}.",
                 SocketCategoryChannel categoryChannel =>
                     $"Quorum settings for category \"{categoryChannel.Name}\": roles {renderedRoles}; proportion {renderedProportion}.",
-                _ => "Invalid channel type for quorum settings."
+                _ => "Invalid channel type for quorum settings.",
             };
         }
 
@@ -502,14 +502,14 @@ public sealed class SettingsModule : SlashCommandBase
                 SocketTextChannel textChannel => $"Quorum settings removed for channel {textChannel.Mention}.",
                 SocketCategoryChannel categoryChannel =>
                     $"Quorum settings removed for category \"{categoryChannel.Name}\".",
-                _ => "Invalid channel type for quorum settings removal."
+                _ => "Invalid channel type for quorum settings removal.",
             };
 
         private static string DescribeError(Error error) =>
             error.Type switch
             {
                 ErrorType.NotFound => "No quorum settings exist for that target.",
-                _ => error.Description
+                _ => error.Description,
             };
 
         private static string FormatProportion(double proportion) =>

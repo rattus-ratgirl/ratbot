@@ -36,7 +36,7 @@ public sealed class DiscordInteractionHandler(
             SocketMessageCommand messageCommand => messageCommand.Data.Name,
             SocketMessageComponent component => component.Data.CustomId,
             SocketModal modal => modal.Data.CustomId,
-            _ => interaction.Type.ToString()
+            _ => interaction.Type.ToString(),
         };
 
     private static string GetSlashCommandName(SocketSlashCommand command)
@@ -76,7 +76,7 @@ public sealed class DiscordInteractionHandler(
             SocketSlashCommand slashCommand => GetSlashUsageDetails(slashCommand),
             SocketUserCommand userCommand => GetUserContextUsageDetails(userCommand),
             SocketMessageCommand messageCommand => GetMessageContextUsageDetails(messageCommand),
-            _ => new CommandUsageDetails(GetInteractionName(interaction), null, null, null)
+            _ => new CommandUsageDetails(GetInteractionName(interaction), null, null, null),
         };
 
     private static CommandUsageDetails GetSlashUsageDetails(SocketSlashCommand slashCommand)
@@ -400,7 +400,7 @@ public sealed class DiscordInteractionHandler(
                 SlashCommandCount = module.SlashCommands.Count,
                 ContextCommandCount = module.ContextCommands.Count,
                 ComponentCommandCount = module.ComponentCommands.Count,
-                ModalCommandCount = module.ModalCommands.Count
+                ModalCommandCount = module.ModalCommands.Count,
             })
             .ToArray();
 
@@ -417,7 +417,7 @@ public sealed class DiscordInteractionHandler(
                     command.Name,
                     Method = command.MethodName,
                     SupportsWildCards = (bool?)null,
-                    ModalType = (string?)null
+                    ModalType = (string?)null,
                 })
             );
 
@@ -430,7 +430,7 @@ public sealed class DiscordInteractionHandler(
                     command.Name,
                     Method = command.MethodName,
                     SupportsWildCards = (bool?)null,
-                    ModalType = (string?)null
+                    ModalType = (string?)null,
                 })
             );
 
@@ -443,7 +443,7 @@ public sealed class DiscordInteractionHandler(
                     command.Name,
                     Method = command.MethodName,
                     SupportsWildCards = (bool?)command.SupportsWildCards,
-                    ModalType = (string?)null
+                    ModalType = (string?)null,
                 })
             );
 
@@ -456,7 +456,7 @@ public sealed class DiscordInteractionHandler(
                     command.Name,
                     Method = command.MethodName,
                     SupportsWildCards = (bool?)command.SupportsWildCards,
-                    ModalType = command.Modal.Type.FullName
+                    ModalType = command.Modal.Type.FullName,
                 })
             );
         }

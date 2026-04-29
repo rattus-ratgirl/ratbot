@@ -150,7 +150,7 @@ public sealed class RoleColourReconciler(IServiceScopeFactory scopeFactory, ILog
             .Select(o => new
             {
                 Option = o,
-                Role = guild.GetRole(o.SourceRoleId)
+                Role = guild.GetRole(o.SourceRoleId),
             })
             .OrderByDescending(x => x.Role?.Position ?? int.MinValue)
             .ThenBy(x => x.Option.Label, StringComparer.OrdinalIgnoreCase)

@@ -8,6 +8,6 @@ public static class RpsGameRules
             (RpsPick.Paper, RpsPick.Rock) => RpsGameOutcome.OpponentWon,
             (RpsPick.Rock, RpsPick.Scissors) => RpsGameOutcome.OpponentWon,
             (RpsPick.Scissors, RpsPick.Paper) => RpsGameOutcome.OpponentWon,
-            _ => RpsGameOutcome.Tie
+            _ => RpsGameOutcome.Tie,
         };
 }

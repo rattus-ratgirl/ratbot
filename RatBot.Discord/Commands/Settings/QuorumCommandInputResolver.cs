@@ -13,7 +13,7 @@ public sealed class QuorumCommandInputResolver : IQuorumCommandInputResolver
         {
             ChannelType.Text => QuorumSettingsType.Channel,
             ChannelType.Category => QuorumSettingsType.Category,
-            _ => null
+            _ => null,
         };
 
         if (targetType is null)

@@ -59,7 +59,7 @@ public sealed class MetaSuggestion
             Motivation = motivation,
             Specification = specification,
             IsAnonymous = isAnonymous,
-            State = MetaSuggestionState.New
+            State = MetaSuggestionState.New,
         };
     }
 
