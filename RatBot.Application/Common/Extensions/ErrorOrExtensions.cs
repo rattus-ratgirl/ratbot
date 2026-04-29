@@ -81,4 +81,13 @@ public static class ErrorOrExtensions
                 : project(source.Value, inner.Value);
         }
     }
+
+    public async static Task<ErrorOr<T>> ToErrorOr<T>(this Task<T?> task, Error error) where T : class
+    {
+        T? value = await task;
+
+        return value is not null
+            ? value
+            : error;
+    }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RatBot.Infrastructure.Data;
@@ -11,9 +12,11 @@ using RatBot.Infrastructure.Data;
 namespace RatBot.Infrastructure.Migrations
 {
     [DbContext(typeof(BotDbContext))]
-    partial class BotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260429002209_UpdateSuggestionAnonymityType")]
+    partial class UpdateSuggestionAnonymityType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,7 +50,7 @@ namespace RatBot.Infrastructure.Migrations
                     b.Property<long>("AuthorUserId")
                         .HasColumnType("bigint");
 
-                    b.Property<long?>("ForumChannelId")
+                    b.Property<long>("ForumChannelId")
                         .HasColumnType("bigint");
 
                     b.Property<long>("GuildId")
@@ -94,7 +97,16 @@ namespace RatBot.Infrastructure.Migrations
 
                     b.HasIndex("GuildId", "State");
 
-                    b.ToTable("MetaSuggestions", (string)null);
+                    b.ToTable("MetaSuggestions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MetaSuggestions_Motivation_NotBlank", "length(btrim(\"Motivation\")) > 0");
+
+                            t.HasCheckConstraint("CK_MetaSuggestions_Specification_NotBlank", "length(btrim(\"Specification\")) > 0");
+
+                            t.HasCheckConstraint("CK_MetaSuggestions_Summary_NotBlank", "length(btrim(\"Summary\")) > 0");
+
+                            t.HasCheckConstraint("CK_MetaSuggestions_Title_NotBlank", "length(btrim(\"Title\")) > 0");
+                        });
                 });
 
             modelBuilder.Entity("RatBot.Domain.Meta.MetaSuggestionSettings", b =>

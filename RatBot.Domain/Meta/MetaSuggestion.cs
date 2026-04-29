@@ -7,28 +7,27 @@ public sealed class MetaSuggestion
     {
     }
 
-    public long Id { get; private init; }
-    public ulong GuildId { get; private init; }
-    public ulong AuthorUserId { get; private init; }
-    public DateTimeOffset SubmittedAtUtc { get; private init; }
-    public string Title { get; private init; } = string.Empty;
-    public string Summary { get; private init; } = string.Empty;
-    public string Motivation { get; private init; } = string.Empty;
-    public string Specification { get; private init; } = string.Empty;
-    public MetaSuggestionAnonymity Anonymity { get; private init; }
-    public MetaSuggestionState State { get; private init; }
-    public ulong ForumChannelId { get; private init; }
+    public long Id { get; private set; }
+    public ulong GuildId { get; private set; }
+    public ulong AuthorUserId { get; private set; }
+    public DateTimeOffset SubmittedAtUtc { get; private set; }
+    public string Title { get; private set; } = string.Empty;
+    public string Summary { get; private set; } = string.Empty;
+    public string Motivation { get; private set; } = string.Empty;
+    public string Specification { get; private set; } = string.Empty;
+    public bool IsAnonymous { get; private set; }
+    public MetaSuggestionState State { get; private set; }
+    public ulong? ForumChannelId { get; private set; }
     public ulong? ThreadChannelId { get; private set; }
 
-    public static ErrorOr<MetaSuggestion> CreateNew(
+    public static ErrorOr<MetaSuggestion> Create(
         ulong guildId,
         ulong authorUserId,
-        ulong forumChannelId,
         string title,
         string summary,
         string motivation,
         string specification,
-        MetaSuggestionAnonymity anonymity,
+        bool isAnonymous,
         DateTimeOffset submittedAtUtc
     )
     {
@@ -49,11 +48,9 @@ public sealed class MetaSuggestion
         if (string.IsNullOrWhiteSpace(specification))
             return RequiredFieldMissing(nameof(Specification));
 
-        if (!Enum.IsDefined(anonymity))
-            return Error.Validation("MetaSuggestion.InvalidAnonymity", "Meta suggestion anonymity is invalid.");
-
         return new MetaSuggestion
         {
+            Id = 0,
             GuildId = guildId,
             AuthorUserId = authorUserId,
             SubmittedAtUtc = submittedAtUtc,
@@ -61,10 +58,8 @@ public sealed class MetaSuggestion
             Summary = summary,
             Motivation = motivation,
             Specification = specification,
-            Anonymity = anonymity,
-            State = MetaSuggestionState.New,
-            ForumChannelId = forumChannelId,
-            ThreadChannelId = null
+            IsAnonymous = isAnonymous,
+            State = MetaSuggestionState.New
         };
     }
 
@@ -81,6 +76,22 @@ public sealed class MetaSuggestion
                 "Meta suggestion already has a thread attached.");
 
         ThreadChannelId = threadChannelId;
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> AssignForum(ulong forumChannelId)
+    {
+        if (ForumChannelId is not null)
+            return Error.Conflict(
+                "MetaSuggestion.ForumAlreadyAssigned",
+                "Meta suggestion already has an assigned forum.");
+
+        if (forumChannelId == 0)
+            return Error.Validation(
+                "MetaSuggestion.ForumRequired",
+                "A valid forum channel id is required.");
+
+        ForumChannelId = forumChannelId;
         return Result.Success;
     }
 }

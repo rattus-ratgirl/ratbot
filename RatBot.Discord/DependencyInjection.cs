@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
+using RatBot.Application.Common.Forums;
 using RatBot.Discord.BackgroundWorkers;
-using RatBot.Discord.Commands.Meta;
+using RatBot.Discord.Forum;
 using RatBot.Discord.Commands.Settings;
 using RatBot.Discord.Configuration;
 using RatBot.Discord.Gateway;
@@ -57,20 +58,19 @@ public static class DependencyInjection
             services.AddSingleton<UserUpdatedGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<UserUpdatedGatewayHandler>());
             services.AddSingleton<GuildMemberCacheService>();
-            services.AddSingleton<MetaSuggestionPendingStore>();
             services.AddSingleton<IQuorumCommandInputResolver, QuorumCommandInputResolver>();
             services.AddSingleton<IRoleColourReconciler, RoleColourReconciler>();
 
+
             // Role-colour sync queue and background worker
             services.AddSingleton<IRoleColourSyncQueue, RoleColourSyncQueue>();
-
-            services.AddSingleton<DiscordMetaSuggestionForumServiceFactory>(_ =>
-                guild => new MetaSuggestionForumService(guild));
 
             services.AddHostedService<DiscordBotHostedService>();
             services.AddHostedService<GuildMemberCacheBackgroundWorker>();
             services.AddHostedService<EmojiAnalyticsBackgroundWorker>();
             services.AddHostedService<RoleColourSyncBackgroundWorker>();
+
+            services.AddSingleton<IForumThreadClient, ForumThreadClient>();
         }
     }
 }

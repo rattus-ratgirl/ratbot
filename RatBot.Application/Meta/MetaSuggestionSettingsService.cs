@@ -1,6 +1,8 @@
+using RatBot.Application.Common;
+
 namespace RatBot.Application.Meta;
 
-public sealed class MetaSuggestionSettingsService(IMetaSuggestionSettingsRepository repository, ILogger logger)
+public sealed class MetaSuggestionSettingsService(IUnitOfWork uow, ILogger logger)
 {
     private readonly ILogger _logger = logger.ForContext<MetaSuggestionSettingsService>();
 
@@ -12,12 +14,15 @@ public sealed class MetaSuggestionSettingsService(IMetaSuggestionSettingsReposit
         if (forumChannelId == 0)
             return MetaSuggestionErrors.ForumNotFound;
 
-        ErrorOr<Success> result = await repository.SaveSettingsAsync(
-            new MetaSuggestionSettings(guildId, forumChannelId),
-            ct);
+        IRepository<MetaSuggestionSettings> settings = uow.GetRepository<MetaSuggestionSettings>();
+        ErrorOr<MetaSuggestionSettings> setting = await settings.TryFindAsync((long)guildId);
 
-        if (result.IsError)
-            return result.Errors;
+        if (!setting.IsError)
+            settings.Delete(setting.Value);
+
+        settings.Add(new MetaSuggestionSettings(guildId, forumChannelId));
+
+        await uow.SaveChangesAsync(ct);
 
         _logger.Information(
             "Meta suggestion forum settings updated for guild {GuildId}. ForumChannelId={ForumChannelId}",

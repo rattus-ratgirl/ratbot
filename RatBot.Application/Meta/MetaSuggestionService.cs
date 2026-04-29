@@ -1,10 +1,9 @@
+using RatBot.Application.Common;
+using RatBot.Application.Common.Forums;
+
 namespace RatBot.Application.Meta;
 
-public sealed class MetaSuggestionService(
-    IMetaSuggestionRepository suggestionRepository,
-    IMetaSuggestionSettingsRepository settingsRepository,
-    ILogger logger
-)
+public sealed class MetaSuggestionService(IUnitOfWork uow, IForumThreadClient forumThreadClient, ILogger logger)
 {
     private readonly ILogger _logger = logger.ForContext<MetaSuggestionService>();
 
@@ -17,7 +16,7 @@ public sealed class MetaSuggestionService(
          ## Date
          <t:{suggestion.SubmittedAtUtc.ToUnixTimeSeconds()}:F>
          ## Anonymity
-         {ToAnonymityString(suggestion.Anonymity)}
+         {(suggestion.IsAnonymous ? "anonymous" : "public")}
          ## Summary
          {suggestion.Summary}
          """;
@@ -34,109 +33,76 @@ public sealed class MetaSuggestionService(
          {suggestion.Specification}
          """;
 
-    private static string ToAnonymityString(MetaSuggestionAnonymity anonymity) =>
-        anonymity switch
-        {
-            MetaSuggestionAnonymity.Anonymous => "anonymous",
-            MetaSuggestionAnonymity.Public => "public",
-            _ => throw new ArgumentOutOfRangeException(nameof(anonymity), anonymity, null)
-        };
-
-    public async Task<ErrorOr<Success>> SubmitAsync(
-        ISuggestionThreadPublisher threadPublisher,
-        MetaSuggestionDraft draft,
-        MetaSuggestionAnonymity anonymity,
-        CancellationToken ct = default
-    )
+    public async Task<ErrorOr<Success>> SubmitAsync(MetaSuggestion suggestion, CancellationToken ct = default)
     {
         _logger.Information(
             "Received meta suggestion submission for guild {GuildId} from author {AuthorUserId}.",
-            draft.GuildId,
-            draft.AuthorUserId);
+            suggestion.GuildId,
+            suggestion.AuthorUserId);
 
-        ErrorOr<MetaSuggestionSettings> settingsResult = await settingsRepository.GetSettingsAsync(draft.GuildId, ct);
+        IRepository<MetaSuggestionSettings> settingsRepo = uow.GetRepository<MetaSuggestionSettings>();
+        ErrorOr<MetaSuggestionSettings> settingsResult = await settingsRepo.TryFindAsync((long)suggestion.GuildId);
 
         if (settingsResult.IsError)
-            return settingsResult.Errors;
+            return MetaSuggestionErrors.ForumNotConfigured;
 
         MetaSuggestionSettings settings = settingsResult.Value;
 
-        ErrorOr<MetaSuggestion> suggestionResult = MetaSuggestion.CreateNew(
-            draft.GuildId,
-            draft.AuthorUserId,
-            settings.SuggestForumChannelId,
-            draft.Title,
-            draft.Summary,
-            draft.Motivation,
-            draft.Specification,
-            anonymity,
-            DateTimeOffset.UtcNow
-        );
+        ErrorOr<Success> assignForum = suggestion.AssignForum(settings.SuggestForumChannelId);
 
-        if (suggestionResult.IsError)
-            return suggestionResult.Errors;
+        if (assignForum.IsError)
+            return assignForum.Errors;
 
-        MetaSuggestion suggestion = suggestionResult.Value;
+        IRepository<MetaSuggestion> suggestionsRepo = uow.GetRepository<MetaSuggestion>();
+        suggestionsRepo.Add(suggestion);
+        await uow.SaveChangesAsync(ct);
 
-        ErrorOr<MetaSuggestion> persistedResult = await suggestionRepository.CreateAsync(suggestion, ct);
+        if (suggestion.Id <= 0)
+            return Error.Failure(
+                "MetaSuggestion.PersistenceFailed",
+                "Suggestion row was saved without a valid database identifier.");
 
-        if (persistedResult.IsError)
-            return persistedResult.Errors;
+        string threadTitle = FormatThreadTitle(suggestion.Id, suggestion.Title);
+        string firstPost = BuildFirstPost(suggestion);
+        string secondPost = BuildSecondPost(suggestion);
+        string thirdPost = BuildThirdPost(suggestion);
 
-        MetaSuggestion persisted = persistedResult.Value;
+        if (suggestion.ForumChannelId is not { } forumChannelId)
+            return Error.Validation(
+                "MetaSuggestion.MissingChannelId",
+                "Suggestion row was saved without a forum channel id.");
 
-        _logger.Information(
-            "Persisted meta suggestion {SuggestionId} for guild {GuildId}.",
-            persisted.Id,
-            persisted.GuildId);
-
-        string threadTitle = FormatThreadTitle(persisted.Id, persisted.Title);
-        string firstPost = BuildFirstPost(persisted);
-        string secondPost = BuildSecondPost(persisted);
-        string thirdPost = BuildThirdPost(persisted);
-
-        ErrorOr<PublishedSuggestionThread> threadResult = await threadPublisher.PublishSuggestionThreadAsync(
-            persisted.ForumChannelId,
+        ErrorOr<PublishedForumThread> threadResult = await forumThreadClient.CreateThreadWithMessagesAsync(
+            forumChannelId,
             threadTitle,
-            firstPost,
-            secondPost,
-            thirdPost
+            [firstPost, secondPost, thirdPost]
         );
 
         if (threadResult.IsError)
         {
             _logger.Error(
                 "Forum thread creation failed for suggestion {SuggestionId} in forum {ForumChannelId}. Error={ErrorCode}",
-                persisted.Id,
-                persisted.ForumChannelId,
+                suggestion.Id,
+                suggestion.ForumChannelId,
                 threadResult.FirstError.Code
             );
 
-            return MetaSuggestionErrors.ForumThreadCreationFailed(persisted.Id);
+            return MetaSuggestionErrors.ForumThreadCreationFailed(suggestion.Id);
         }
 
-        PublishedSuggestionThread createdThread = threadResult.Value;
+        PublishedForumThread createdThread = threadResult.Value;
+
+        ErrorOr<Success> attachResult = suggestion.AttachThread(createdThread.ThreadChannelId);
+
+        if (attachResult.IsError)
+            return attachResult.Errors;
+
+        await uow.SaveChangesAsync(ct);
 
         _logger.Information(
             "Created forum thread {ThreadChannelId} for suggestion {SuggestionId}.",
             createdThread.ThreadChannelId,
-            persisted.Id);
-
-        ErrorOr<Success> linkageResult =
-            await suggestionRepository.AttachThreadLinkageAsync(persisted.Id, createdThread.ThreadChannelId, ct);
-
-        if (linkageResult.IsError)
-        {
-            _logger.Error(
-                "Failed persisting suggestion-thread linkage for suggestion {SuggestionId}, thread {ThreadChannelId}.",
-                persisted.Id,
-                createdThread.ThreadChannelId
-            );
-
-            return MetaSuggestionErrors.LinkagePersistFailed(persisted.Id);
-        }
-
-        _logger.Information("Persisted suggestion-thread linkage for suggestion {SuggestionId}.", persisted.Id);
+            suggestion.Id);
 
         return Result.Success;
     }

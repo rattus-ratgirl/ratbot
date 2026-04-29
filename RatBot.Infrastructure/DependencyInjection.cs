@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RatBot.Application.Common;
 using RatBot.Application.Meta;
 using RatBot.Application.Moderation;
 using RatBot.Application.Quorum;
@@ -23,8 +24,11 @@ public static class DependencyInjection
 
             services.AddSingleton<IRpsGameStore, RpsGameStore>();
 
-            services.AddScoped<IMetaSuggestionRepository, MetaSuggestionRepository>();
-            services.AddScoped<IMetaSuggestionSettingsRepository, MetaSuggestionSettingsRepository>();
+            // Repositories and unit of work
+            services.AddScoped<IUnitOfWork, BotDbContext>();
+            services.AddScoped<IRepository<MetaSuggestion>, BotDbContext>();
+            services.AddScoped<IRepository<MetaSuggestionSettings>, BotDbContext>();
+
             services.AddScoped<IAutobannedUserRepository, AutobannedUserRepository>();
             services.AddScoped<IQuorumSettingsRepository, QuorumSettingsRepository>();
             services.AddScoped<IEmojiRepository, EmojiRepository>();
