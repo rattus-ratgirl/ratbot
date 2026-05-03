@@ -2,7 +2,6 @@
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Infrastructure;
 global using Microsoft.EntityFrameworkCore.Migrations;
-global using RatBot.Application.Emoji;
 global using RatBot.Domain.Emoji;
 global using RatBot.Domain.Meta;
 global using RatBot.Domain.Moderation;

@@ -1,6 +1,6 @@
 using System.Threading.Channels;
 
-namespace RatBot.Application.Emoji;
+namespace RatBot.Application.Reactions;
 
 public sealed class ReactionQueue
 {

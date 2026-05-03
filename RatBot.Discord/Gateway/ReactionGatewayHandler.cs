@@ -1,4 +1,4 @@
-using RatBot.Application.Emoji;
+using RatBot.Application.Reactions;
 
 namespace RatBot.Discord.Gateway;
 

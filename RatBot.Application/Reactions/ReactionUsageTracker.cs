@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using RatBot.Application.Reactions;
 using RatBot.Domain.Emoji;
 
-namespace RatBot.Application.Emoji;
+namespace RatBot.Application.Reactions;
 
 public sealed class ReactionUsageTracker(IEmojiRepository emojiRepository, ILogger logger)
 {

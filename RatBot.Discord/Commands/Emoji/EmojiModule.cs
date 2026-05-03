@@ -1,5 +1,5 @@
 using System.Text;
-using RatBot.Application.Emoji;
+using RatBot.Application.Reactions;
 using RatBot.Domain.Emoji;
 
 namespace RatBot.Discord.Commands.Emoji;

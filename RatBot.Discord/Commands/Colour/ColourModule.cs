@@ -4,7 +4,7 @@ using RatBot.Discord.Handlers;
 using RatBot.Infrastructure.Data;
 using RatBot.Infrastructure.RoleColours;
 
-namespace RatBot.Discord.Commands.Color;
+namespace RatBot.Discord.Commands.Colour;
 
 [Group("colour", "Pick or remove your display colour.")]
 public sealed class ColourModule(BotDbContext db, IRoleColourReconciler reconciler)
