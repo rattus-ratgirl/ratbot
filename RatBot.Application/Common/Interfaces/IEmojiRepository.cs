@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RatBot.Domain.Emoji;
 
-namespace RatBot.Application.Reactions;
+namespace RatBot.Application.Common.Interfaces;
 
 public interface IEmojiRepository
 {

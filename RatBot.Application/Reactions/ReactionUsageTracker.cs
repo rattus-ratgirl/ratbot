@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RatBot.Application.Common.Interfaces;
 using RatBot.Domain.Emoji;
 
 namespace RatBot.Application.Reactions;

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RatBot.Application.Administration;
+using RatBot.Application.MessageContent;
 using RatBot.Application.Meta;
 using RatBot.Application.Moderation;
 using RatBot.Application.Quorum;
@@ -16,9 +17,11 @@ public static class DependencyInjection
         public void AddApplication()
         {
             services.AddSingleton<ReactionQueue>();
+            services.AddSingleton<MessageContentQueue>();
 
             services.AddScoped<AdminSendService>();
             services.AddScoped<ReactionUsageTracker>();
+            services.AddScoped<EmojiUsageTracker>();
             services.AddScoped<MetaSuggestionService>();
             services.AddScoped<MetaSuggestionSettingsService>();
             services.AddScoped<IModerationService, ModerationService>();

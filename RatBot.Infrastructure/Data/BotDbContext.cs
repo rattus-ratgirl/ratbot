@@ -1,5 +1,6 @@
 using RatBot.Application.Common;
 using RatBot.Application.Common.Extensions;
+using RatBot.Application.Common.Interfaces;
 using RatBot.Application.Reactions;
 
 namespace RatBot.Infrastructure.Data;

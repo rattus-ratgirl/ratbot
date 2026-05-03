@@ -1,13 +1,17 @@
+using System.Threading.Channels;
+using RatBot.Application.MessageContent;
 using RatBot.Application.Reactions;
 
 namespace RatBot.Discord.BackgroundWorkers;
 
 public sealed class EmojiAnalyticsBackgroundWorker(
-    ReactionQueue buffer,
+    ReactionQueue reactionQueue,
+    MessageContentQueue messageContentQueue,
     IServiceScopeFactory scopeFactory,
     ILogger logger) : BackgroundService
 {
     private readonly ILogger _logger = logger.ForContext<EmojiAnalyticsBackgroundWorker>();
+    private const int BatchSize = 100;
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -17,28 +21,19 @@ public sealed class EmojiAnalyticsBackgroundWorker(
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                // Wait for data to be available
-                if (!await buffer.Reader.WaitToReadAsync(stoppingToken).ConfigureAwait(false))
+                if (!await WaitForDataAsync(stoppingToken).ConfigureAwait(false))
                     break;
 
-                // Collect a batch of items
-                Queue<string> emojiBatch = new Queue<string>();
+                Queue<string> reactionBatch = DrainBatch(reactionQueue.Reader);
+                Queue<string> messageContentBatch = DrainBatch(messageContentQueue.Reader);
 
-                while (buffer.Reader.TryRead(out string? emojiId))
-                {
-                    emojiBatch.Enqueue(emojiId);
+                if (reactionBatch.Count > 0)
+                    await ProcessReactionBatchAsync(reactionBatch, stoppingToken).ConfigureAwait(false);
 
-                    // Stop if batch size is reached (e.g., 100)
-                    if (emojiBatch.Count >= 100)
-                        break;
-                }
+                if (messageContentBatch.Count > 0)
+                    await ProcessMessageContentBatchAsync(messageContentBatch, stoppingToken).ConfigureAwait(false);
 
-                if (emojiBatch.Count > 0)
-                    await ProcessBatchAsync(emojiBatch, stoppingToken).ConfigureAwait(false);
-
-                // Add a small delay if the buffer was empty to avoid tight loop,
-                // but only if we didn't just process a full batch.
-                if (emojiBatch.Count < 100)
+                if (reactionBatch.Count < BatchSize && messageContentBatch.Count < BatchSize)
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken).ConfigureAwait(false);
             }
         }
@@ -52,7 +47,41 @@ public sealed class EmojiAnalyticsBackgroundWorker(
         }
     }
 
-    private async Task ProcessBatchAsync(Queue<string> emojiBatch, CancellationToken ct)
+    private async Task<bool> WaitForDataAsync(CancellationToken ct)
+    {
+        if (reactionQueue.Reader.TryPeek(out _) || messageContentQueue.Reader.TryPeek(out _))
+            return true;
+
+        Task<bool> reactionWaitTask = reactionQueue.Reader.WaitToReadAsync(ct).AsTask();
+        Task<bool> messageContentWaitTask = messageContentQueue.Reader.WaitToReadAsync(ct).AsTask();
+        Task<bool> completedTask = await Task.WhenAny(reactionWaitTask, messageContentWaitTask).ConfigureAwait(false);
+
+        if (await completedTask.ConfigureAwait(false))
+            return true;
+
+        Task<bool> otherTask = ReferenceEquals(completedTask, reactionWaitTask)
+            ? messageContentWaitTask
+            : reactionWaitTask;
+
+        return await otherTask.ConfigureAwait(false);
+    }
+
+    private static Queue<string> DrainBatch(ChannelReader<string> reader)
+    {
+        Queue<string> batch = new Queue<string>();
+
+        while (reader.TryRead(out string? item))
+        {
+            batch.Enqueue(item);
+
+            if (batch.Count >= BatchSize)
+                break;
+        }
+
+        return batch;
+    }
+
+    private async Task ProcessReactionBatchAsync(Queue<string> emojiBatch, CancellationToken ct)
     {
         try
         {
@@ -65,12 +94,36 @@ public sealed class EmojiAnalyticsBackgroundWorker(
 
                 await reactionUsageTracker.RecordBatchUsageAsync(emojiBatch, ct).ConfigureAwait(false);
 
-                _logger.Debug("Processed {Count} emoji usage events from channel.", emojiBatch.Count);
+                _logger.Debug("Processed {Count} emoji reaction usage events from channel.", emojiBatch.Count);
             }
         }
         catch (Exception ex)
         {
             _logger.Warning(ex, "Failed to process emoji analytics batch.");
+        }
+    }
+
+    private async Task ProcessMessageContentBatchAsync(Queue<string> messageContentBatch, CancellationToken ct)
+    {
+        try
+        {
+            AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+
+            await using (scope.ConfigureAwait(false))
+            {
+                EmojiUsageTracker emojiUsageTracker =
+                    scope.ServiceProvider.GetRequiredService<EmojiUsageTracker>();
+
+                await emojiUsageTracker.RecordMessageBatchUsageAsync(messageContentBatch, ct).ConfigureAwait(false);
+
+                _logger.Debug(
+                    "Processed {Count} message content emoji usage events from channel.",
+                    messageContentBatch.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Failed to process message content emoji analytics batch.");
         }
     }
 }

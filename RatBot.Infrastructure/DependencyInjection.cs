@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RatBot.Application.Common;
+using RatBot.Application.Common.Interfaces;
 using RatBot.Application.Meta;
 using RatBot.Application.Moderation;
 using RatBot.Application.Quorum;
