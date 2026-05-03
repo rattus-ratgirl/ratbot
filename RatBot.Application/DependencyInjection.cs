@@ -14,10 +14,10 @@ public static class DependencyInjection
     {
         public void AddApplication()
         {
-            services.AddSingleton<EmojiAnalyticsBuffer>();
+            services.AddSingleton<ReactionQueue>();
 
             services.AddScoped<AdminSendService>();
-            services.AddScoped<EmojiAnalyticsService>();
+            services.AddScoped<ReactionUsageTracker>();
             services.AddScoped<MetaSuggestionService>();
             services.AddScoped<MetaSuggestionSettingsService>();
             services.AddScoped<IModerationService, ModerationService>();

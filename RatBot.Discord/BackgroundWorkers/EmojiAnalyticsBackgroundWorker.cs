@@ -3,7 +3,7 @@ using RatBot.Application.Emoji;
 namespace RatBot.Discord.BackgroundWorkers;
 
 public sealed class EmojiAnalyticsBackgroundWorker(
-    EmojiAnalyticsBuffer buffer,
+    ReactionQueue buffer,
     IServiceScopeFactory scopeFactory,
     ILogger logger) : BackgroundService
 {
@@ -18,11 +18,11 @@ public sealed class EmojiAnalyticsBackgroundWorker(
             while (!stoppingToken.IsCancellationRequested)
             {
                 // Wait for data to be available
-                if (!await buffer.Reader.WaitToReadAsync(stoppingToken))
+                if (!await buffer.Reader.WaitToReadAsync(stoppingToken).ConfigureAwait(false))
                     break;
 
                 // Collect a batch of items
-                Queue<string> emojiBatch = [];
+                Queue<string> emojiBatch = new Queue<string>();
 
                 while (buffer.Reader.TryRead(out string? emojiId))
                 {
@@ -34,12 +34,12 @@ public sealed class EmojiAnalyticsBackgroundWorker(
                 }
 
                 if (emojiBatch.Count > 0)
-                    await ProcessBatchAsync(emojiBatch, stoppingToken);
+                    await ProcessBatchAsync(emojiBatch, stoppingToken).ConfigureAwait(false);
 
                 // Add a small delay if the buffer was empty to avoid tight loop,
                 // but only if we didn't just process a full batch.
                 if (emojiBatch.Count < 100)
-                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -56,14 +56,17 @@ public sealed class EmojiAnalyticsBackgroundWorker(
     {
         try
         {
-            await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+            AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
 
-            EmojiAnalyticsService emojiAnalyticsService =
-                scope.ServiceProvider.GetRequiredService<EmojiAnalyticsService>();
+            await using (scope.ConfigureAwait(false))
+            {
+                ReactionUsageTracker reactionUsageTracker =
+                    scope.ServiceProvider.GetRequiredService<ReactionUsageTracker>();
 
-            await emojiAnalyticsService.RecordBatchUsageAsync(emojiBatch, ct);
+                await reactionUsageTracker.RecordBatchUsageAsync(emojiBatch, ct).ConfigureAwait(false);
 
-            _logger.Debug("Processed {Count} emoji usage events from channel.", emojiBatch.Count);
+                _logger.Debug("Processed {Count} emoji usage events from channel.", emojiBatch.Count);
+            }
         }
         catch (Exception ex)
         {

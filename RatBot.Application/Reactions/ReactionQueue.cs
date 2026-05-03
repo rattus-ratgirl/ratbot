@@ -2,7 +2,7 @@ using System.Threading.Channels;
 
 namespace RatBot.Application.Emoji;
 
-public sealed class EmojiAnalyticsBuffer
+public sealed class ReactionQueue
 {
     private readonly Channel<string> _channel = Channel.CreateUnbounded<string>(
         new UnboundedChannelOptions

@@ -1,5 +1,6 @@
 using RatBot.Application.Common;
 using RatBot.Application.Common.Extensions;
+using RatBot.Application.Reactions;
 
 namespace RatBot.Infrastructure.Data;
 
@@ -7,7 +8,7 @@ namespace RatBot.Infrastructure.Data;
 ///     Entity Framework Core database context for RatBot persistence.
 /// </summary>
 public sealed class BotDbContext(DbContextOptions<BotDbContext> options)
-    : DbContext(options), IUnitOfWork, IRepository<MetaSuggestion>, IRepository<MetaSuggestionSettings>
+    : DbContext(options), IUnitOfWork, IRepository<MetaSuggestion>, IRepository<MetaSuggestionSettings>, IEmojiRepository
 {
     public DbSet<QuorumSettings> QuorumSettings => Set<QuorumSettings>();
     public DbSet<QuorumSettingsRole> QuorumSettingsRoles => Set<QuorumSettingsRole>();

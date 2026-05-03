@@ -53,8 +53,8 @@ public static class DependencyInjection
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<DiscordInteractionHandler>());
             services.AddSingleton<AutobanGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<AutobanGatewayHandler>());
-            services.AddSingleton<EmojiReactionGatewayHandler>();
-            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<EmojiReactionGatewayHandler>());
+            services.AddSingleton<ReactionGatewayHandler>();
+            services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<ReactionGatewayHandler>());
             services.AddSingleton<UserUpdatedGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<UserUpdatedGatewayHandler>());
             services.AddSingleton<GuildMemberCacheService>();

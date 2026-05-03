@@ -2,13 +2,13 @@ using RatBot.Application.Emoji;
 
 namespace RatBot.Discord.Gateway;
 
-public sealed class EmojiReactionGatewayHandler(
+public sealed class ReactionGatewayHandler(
     DiscordSocketClient discordClient,
-    EmojiAnalyticsBuffer buffer,
+    ReactionQueue buffer,
     ILogger logger)
     : IDiscordGatewayHandler
 {
-    private readonly ILogger _logger = logger.ForContext<EmojiReactionGatewayHandler>();
+    private readonly ILogger _logger = logger.ForContext<ReactionGatewayHandler>();
 
     public Task InitializeAsync(CancellationToken ct)
     {

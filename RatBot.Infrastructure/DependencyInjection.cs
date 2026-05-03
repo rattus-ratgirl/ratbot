@@ -4,6 +4,7 @@ using RatBot.Application.Common;
 using RatBot.Application.Meta;
 using RatBot.Application.Moderation;
 using RatBot.Application.Quorum;
+using RatBot.Application.Reactions;
 using RatBot.Application.Rps;
 using RatBot.Infrastructure.Data;
 using RatBot.Infrastructure.Persistence.Repositories;
@@ -31,7 +32,7 @@ public static class DependencyInjection
 
             services.AddScoped<IAutobannedUserRepository, AutobannedUserRepository>();
             services.AddScoped<IQuorumSettingsRepository, QuorumSettingsRepository>();
-            services.AddScoped<IEmojiRepository, EmojiRepository>();
+            services.AddScoped<IEmojiRepository, BotDbContext>();
         }
     }
 }
