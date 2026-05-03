@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Options;
 using RatBot.Application.Common.Forums;
+using RatBot.Application.Common.Interfaces;
 using RatBot.Discord.BackgroundWorkers;
+using RatBot.Discord.Commands.Emoji;
 using RatBot.Discord.Forum;
 using RatBot.Discord.Commands.Settings;
 using RatBot.Discord.Configuration;
@@ -60,6 +62,7 @@ public static class DependencyInjection
             services.AddSingleton<UserUpdatedGatewayHandler>();
             services.AddSingleton<IDiscordGatewayHandler>(sp => sp.GetRequiredService<UserUpdatedGatewayHandler>());
             services.AddSingleton<GuildMemberCacheService>();
+            services.AddSingleton<ITrackedEmojiCatalog, TrackedEmojiCatalog>();
             services.AddSingleton<IQuorumCommandInputResolver, QuorumCommandInputResolver>();
             services.AddSingleton<IRoleColourReconciler, RoleColourReconciler>();
 

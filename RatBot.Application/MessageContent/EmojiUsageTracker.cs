@@ -1,14 +1,18 @@
 using System.Text.RegularExpressions;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using RatBot.Application.Common.Interfaces;
 using RatBot.Domain.Emoji;
 
 namespace RatBot.Application.MessageContent;
 
-public sealed class EmojiUsageTracker(IEmojiRepository emojiRepository, ILogger logger)
+public sealed class EmojiUsageTracker(
+    IEmojiRepository emojiRepository,
+    ITrackedEmojiCatalog trackedEmojiCatalog,
+    ILogger logger)
 {
     private static readonly Regex EmojiRegex = new Regex(
-        @"(?:<(?<animated>a)?:(?<name>\w{2,32}):)?(?<id>\d{17,21})>?",
+        @"<a?:\w{2,32}:(?<id>\d{17,21})>",
         RegexOptions.Compiled | RegexOptions.CultureInvariant,
         TimeSpan.FromMilliseconds(100));
 
@@ -16,13 +20,21 @@ public sealed class EmojiUsageTracker(IEmojiRepository emojiRepository, ILogger 
 
     public async Task RecordMessageBatchUsageAsync(IEnumerable<string> messageContents, CancellationToken ct = default)
     {
-        List<(string Id, int N)> usages = messageContents
+        if (!trackedEmojiCatalog.TryGetTrackedEmojiIds(out IReadOnlyCollection<ulong> trackedEmojiIds))
+            return;
+
+        HashSet<ulong> trackedEmojiIdSet = trackedEmojiIds.ToHashSet();
+
+        await PruneUntrackedEmojiAsync(trackedEmojiIds, ct).ConfigureAwait(false);
+
+        List<(ulong Id, int N)> usages = messageContents
             .SelectMany(ExtractEmojiIds)
-            .GroupBy(x => x, StringComparer.Ordinal)
+            .Where(trackedEmojiIdSet.Contains)
+            .GroupBy(x => x)
             .Select(g => (EmojiId: g.Key, Count: g.Count()))
             .ToList();
 
-        foreach ((string emojiId, int count) in usages)
+        foreach ((ulong emojiId, int count) in usages)
         {
             int updatedRowCount = await emojiRepository.EmojiUsageCounts
                 .Where(x => x.EmojiId == emojiId)
@@ -46,12 +58,25 @@ public sealed class EmojiUsageTracker(IEmojiRepository emojiRepository, ILogger 
             await emojiRepository.SaveChangesAsync(ct).ConfigureAwait(false);
         }
 
-        foreach ((string Id, int N) usage in usages)
+        foreach ((ulong Id, int N) usage in usages)
             _logger.Verbose("Recorded {EmojiUsageCount} message usages for emoji {EmojiId}.", usage.N, usage.Id);
     }
 
-    private static IEnumerable<string> ExtractEmojiIds(string messageContent) =>
+    private static IEnumerable<ulong> ExtractEmojiIds(string messageContent) =>
         EmojiRegex
             .Matches(messageContent)
-            .Select(match => match.Groups["id"].Value);
+            .Select(match => match.Groups["id"].Value)
+            .Select(TryParseEmojiId)
+            .Where(id => id.HasValue)
+            .Select(id => id.GetValueOrDefault());
+
+    private static ulong? TryParseEmojiId(string id) =>
+        ulong.TryParse(id, NumberStyles.None, CultureInfo.InvariantCulture, out ulong emojiId)
+            ? emojiId
+            : null;
+
+    private Task<int> PruneUntrackedEmojiAsync(IReadOnlyCollection<ulong> trackedEmojiIds, CancellationToken ct) =>
+        emojiRepository.EmojiUsageCounts
+            .Where(x => !trackedEmojiIds.Contains(x.EmojiId))
+            .ExecuteDeleteAsync(ct);
 }

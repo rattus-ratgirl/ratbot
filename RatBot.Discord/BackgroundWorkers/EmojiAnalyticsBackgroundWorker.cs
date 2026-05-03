@@ -24,7 +24,7 @@ public sealed class EmojiAnalyticsBackgroundWorker(
                 if (!await WaitForDataAsync(stoppingToken).ConfigureAwait(false))
                     break;
 
-                Queue<string> reactionBatch = DrainBatch(reactionQueue.Reader);
+                Queue<ulong> reactionBatch = DrainReactionBatch(reactionQueue.Reader);
                 Queue<string> messageContentBatch = DrainBatch(messageContentQueue.Reader);
 
                 if (reactionBatch.Count > 0)
@@ -81,7 +81,22 @@ public sealed class EmojiAnalyticsBackgroundWorker(
         return batch;
     }
 
-    private async Task ProcessReactionBatchAsync(Queue<string> emojiBatch, CancellationToken ct)
+    private static Queue<ulong> DrainReactionBatch(ChannelReader<ulong> reader)
+    {
+        Queue<ulong> batch = new Queue<ulong>();
+
+        while (reader.TryRead(out ulong item))
+        {
+            batch.Enqueue(item);
+
+            if (batch.Count >= BatchSize)
+                break;
+        }
+
+        return batch;
+    }
+
+    private async Task ProcessReactionBatchAsync(Queue<ulong> emojiBatch, CancellationToken ct)
     {
         try
         {

@@ -8,7 +8,7 @@ public sealed class EmojiUsageCountConfiguration : IEntityTypeConfiguration<Emoj
     {
         builder.ToTable("EmojiUsageCounts");
         builder.HasKey(x => x.EmojiId);
-        builder.Property(x => x.EmojiId).HasMaxLength(128);
+        builder.Property(x => x.EmojiId).ValueGeneratedNever();
         builder.Property(x => x.ReactionUsageCount).HasColumnType("int");
     }
 }

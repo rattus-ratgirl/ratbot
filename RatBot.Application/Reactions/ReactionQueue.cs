@@ -4,7 +4,7 @@ namespace RatBot.Application.Reactions;
 
 public sealed class ReactionQueue
 {
-    private readonly Channel<string> _channel = Channel.CreateUnbounded<string>(
+    private readonly Channel<ulong> _channel = Channel.CreateUnbounded<ulong>(
         new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -13,6 +13,6 @@ public sealed class ReactionQueue
         }
     );
 
-    public ChannelWriter<string> Writer => _channel.Writer;
-    public ChannelReader<string> Reader => _channel.Reader;
+    public ChannelWriter<ulong> Writer => _channel.Writer;
+    public ChannelReader<ulong> Reader => _channel.Reader;
 }

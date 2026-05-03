@@ -43,12 +43,11 @@ public sealed class ReactionGatewayHandler(
 
         LogReactionEvent("added", reaction.Emote);
 
-        string emojiId = reaction.Emote is Emote customEmote
-            ? customEmote.Id.ToString()
-            : reaction.Emote.Name;
+        if (reaction.Emote is not Emote customEmote)
+            return;
 
-        if (!buffer.Writer.TryWrite(emojiId))
-            await buffer.Writer.WriteAsync(emojiId);
+        if (!buffer.Writer.TryWrite(customEmote.Id))
+            await buffer.Writer.WriteAsync(customEmote.Id);
     }
 
     private Task HandleReactionRemovedAsync(

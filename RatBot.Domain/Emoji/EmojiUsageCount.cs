@@ -8,7 +8,7 @@ public sealed class EmojiUsageCount
     /// <summary>
     /// The snowflake ID for the emoji
     /// </summary>
-    public required string EmojiId { get; set; }
+    public required ulong EmojiId { get; set; }
 
     /// <summary>
     /// The number of times the emoji has been used as a reaction
